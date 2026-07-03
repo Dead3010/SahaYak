@@ -125,7 +125,6 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
     data: { subject, body, fromEmail, fromName, source: 'MANUAL' },
   });
   res.status(201).json({ ticket });
-  triggerAutoResolve(ticket.id).catch(() => {});
 };
 
 export const updateTicket = async (req: AuthRequest, res: Response) => {
