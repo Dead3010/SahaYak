@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../hooks/useAuth';
 import { Search, SlidersHorizontal, Inbox, Mail, Plus, UserCircle, CalendarDays, Bot } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
@@ -39,11 +40,13 @@ export default function Tickets() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [activePreset, setActivePreset] = useState('');
+  const [assignedToMe, setAssignedToMe] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
 
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
@@ -83,6 +86,7 @@ export default function Tickets() {
   if (search) params.search = search;
   if (dateFrom) params.dateFrom = dateFrom;
   if (dateTo) params.dateTo = dateTo;
+  if (assignedToMe && user) params.assignedToId = user.id;
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['tickets', params],
@@ -232,6 +236,17 @@ export default function Tickets() {
           {(dateFrom || dateTo) && (
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 border border-white" />
           )}
+        </button>
+        <button
+          onClick={() => { setAssignedToMe((v) => !v); resetPage(); }}
+          className={`flex items-center gap-1.5 text-sm px-3 h-9 rounded-lg border font-semibold shrink-0 transition-all duration-150 ${
+            assignedToMe
+              ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
+              : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+          }`}
+        >
+          <UserCircle className="w-4 h-4" />
+          Mine
         </button>
         <Select value={status || 'all'} onValueChange={(v) => { setStatus(v === 'all' ? '' : v); resetPage(); }}>
           <SelectTrigger className="w-36 rounded-lg border-slate-200">

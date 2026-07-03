@@ -41,11 +41,13 @@ export const listTickets = async (req: AuthRequest, res: Response) => {
     sortOrder = 'desc',
     page = '1',
     limit = '20',
+    assignedToId,
   } = req.query as Record<string, string>;
 
   const where: Record<string, unknown> = {};
   if (status) where.status = status as TicketStatus;
   if (category) where.category = category as TicketCategory;
+  if (assignedToId) where.assignedToId = assignedToId;
   if (search) {
     where.OR = [
       { subject: { contains: search, mode: 'insensitive' } },
