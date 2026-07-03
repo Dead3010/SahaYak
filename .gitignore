@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.production
+docker.env
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code internal files
+.claude/
+Claude/
+
+# Large binaries
+*.exe
+*.dmg
+*.pkg
+
+# Test output
+playwright-report/
+test-results/
+coverage/

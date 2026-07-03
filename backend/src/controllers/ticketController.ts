@@ -1,0 +1,272 @@
+import { Response } from 'express';
+import { TicketStatus, TicketCategory } from '@prisma/client';
+import { AuthRequest } from '../middleware/auth';
+import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, parseGeminiError } from '../services/aiService';
+import { sendEmail } from '../services/emailService';
+import { prisma } from '../lib/prisma';
+
+export async function triggerAutoResolve(ticketId: string) {
+  try {
+    console.log(`[AutoResolve] START ticket=${ticketId}`);
+    await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'PROCESSING' } });
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) { console.log(`[AutoResolve] ticket not found`); return; }
+    console.log(`[AutoResolve] calling Gemini for subject="${ticket.subject}"`);
+    const result = await autoResolveFromKB(ticket.subject, ticket.body);
+    console.log(`[AutoResolve] ticket=${ticketId} result=${result.status}${result.status === 'escalate' ? ` reason=${result.reason}` : ''}`);
+    if (result.status === 'resolved') {
+      await prisma.reply.create({
+        data: { body: result.reply, isAI: true, sentViaEmail: true, ticketId },
+      });
+      await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'RESOLVED', aiResolved: true } });
+      sendEmail({ to: ticket.fromEmail, toName: ticket.fromName, subject: ticket.subject, body: result.reply })
+        .then(() => console.log(`[AutoResolve] email sent to ${ticket.fromEmail}`))
+        .catch((e) => console.error(`[AutoResolve] email FAILED: ${e.message}`));
+    } else {
+      await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'OPEN' } });
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[AutoResolve] ERROR for ticket ${ticketId}: ${msg}`);
+    await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'OPEN' } }).catch(() => {});
+  }
+}
+
+export const listTickets = async (req: AuthRequest, res: Response) => {
+  const {
+    status,
+    category,
+    search,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    page = '1',
+    limit = '20',
+  } = req.query as Record<string, string>;
+
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status as TicketStatus;
+  if (category) where.category = category as TicketCategory;
+  if (search) {
+    where.OR = [
+      { subject: { contains: search, mode: 'insensitive' } },
+      { fromEmail: { contains: search, mode: 'insensitive' } },
+      { fromName: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  const { dateFrom, dateTo } = req.query as Record<string, string>;
+  if (dateFrom || dateTo) {
+    const range: { gte?: Date; lte?: Date } = {};
+    if (dateFrom) range.gte = new Date(dateFrom);
+    if (dateTo) {
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      range.lte = end;
+    }
+    where.createdAt = range;
+  }
+
+  const pageNum = Math.max(1, parseInt(page));
+  const take = Math.min(100, parseInt(limit));
+  const skip = (pageNum - 1) * take;
+
+  const validSortFields = ['createdAt', 'updatedAt', 'status', 'category', 'subject'];
+  const orderBy = validSortFields.includes(sortBy)
+    ? { [sortBy]: sortOrder === 'asc' ? 'asc' : ('desc' as const) }
+    : { createdAt: 'desc' as const };
+
+  const [tickets, total] = await Promise.all([
+    prisma.ticket.findMany({
+      where,
+      orderBy,
+      skip,
+      take,
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+        _count: { select: { replies: true } },
+      },
+    }),
+    prisma.ticket.count({ where }),
+  ]);
+
+  res.json({ tickets, total, page: pageNum, totalPages: Math.ceil(total / take) });
+};
+
+export const getTicket = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: (req.params.id as string) },
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+        replies: {
+          orderBy: { createdAt: 'asc' },
+          include: { author: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!ticket) {
+      res.status(404).json({ error: 'Ticket not found' });
+      return;
+    }
+    res.json({ ticket });
+  } catch (err) {
+    console.error('getTicket error:', err);
+    res.status(500).json({ error: 'Failed to fetch ticket' });
+  }
+};
+
+export const createTicket = async (req: AuthRequest, res: Response) => {
+  const { subject, body, fromEmail, fromName } = req.body;
+  if (!subject || !body || !fromEmail || !fromName) {
+    res.status(400).json({ error: 'subject, body, fromEmail, and fromName are required' });
+    return;
+  }
+
+  const ticket = await prisma.ticket.create({
+    data: { subject, body, fromEmail, fromName, source: 'MANUAL' },
+  });
+  res.status(201).json({ ticket });
+  triggerAutoResolve(ticket.id).catch(() => {});
+};
+
+export const updateTicket = async (req: AuthRequest, res: Response) => {
+  const { status, category, assignedToId } = req.body;
+  const data: Record<string, unknown> = {};
+  if (status) data.status = status;
+  if (category) data.category = category;
+  if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
+
+  const ticket = await prisma.ticket.update({
+    where: { id: (req.params.id as string) },
+    data,
+    include: { assignedTo: { select: { id: true, name: true, email: true } } },
+  });
+  res.json({ ticket });
+};
+
+export const deleteTicket = async (req: AuthRequest, res: Response) => {
+  const ticket = await prisma.ticket.findUnique({ where: { id: (req.params.id as string) } });
+  if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+  await prisma.ticket.delete({ where: { id: (req.params.id as string) } });
+  res.json({ message: 'Ticket deleted' });
+};
+
+export const classifyTicketHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: (req.params.id as string) } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+    const category = await classifyTicket(ticket.subject, ticket.body);
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { category, aiClassified: true },
+    });
+    res.json({ ticket: updated, category });
+  } catch (err) {
+    console.error('classifyTicket error:', err);
+    res.status(500).json({ error: parseGeminiError(err) });
+  }
+};
+
+export const summarizeTicketHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: (req.params.id as string) } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+    const summary = await summarizeTicket(ticket.subject, ticket.body);
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { summary },
+    });
+    res.json({ ticket: updated, summary });
+  } catch (err) {
+    console.error('summarizeTicket error:', err);
+    res.status(500).json({ error: parseGeminiError(err) });
+  }
+};
+
+export const suggestReplyHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: (req.params.id as string) } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+    const kbEntries = await prisma.knowledgeBase.findMany({
+      where: { category: ticket.category },
+    });
+
+    const suggestedReply = await suggestReply(
+      ticket.subject,
+      ticket.body,
+      ticket.category,
+      kbEntries
+    );
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { suggestedReply },
+    });
+    res.json({ ticket: updated, suggestedReply });
+  } catch (err) {
+    console.error('suggestReply error:', err);
+    res.status(500).json({ error: parseGeminiError(err) });
+  }
+};
+
+export const addReply = async (req: AuthRequest, res: Response) => {
+  const { body, sendEmail: doSend } = req.body;
+  if (!body) { res.status(400).json({ error: 'body is required' }); return; }
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: (req.params.id as string) } });
+  if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+  let sentViaEmail = false;
+  if (doSend) {
+    await sendEmail({
+      to: ticket.fromEmail,
+      toName: ticket.fromName,
+      subject: ticket.subject,
+      body,
+      replyToTicketId: ticket.id,
+    });
+    sentViaEmail = true;
+  }
+
+  const reply = await prisma.reply.create({
+    data: {
+      body,
+      isAI: false,
+      sentViaEmail,
+      ticketId: ticket.id,
+      authorId: req.user!.id,
+    },
+    include: { author: { select: { id: true, name: true } } },
+  });
+
+  if (doSend) {
+    await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { status: 'RESOLVED' },
+    });
+  }
+
+  res.status(201).json({ reply });
+};
+
+export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
+  const [total, newCount, processing, open, resolved, closed, byCategory] = await Promise.all([
+    prisma.ticket.count(),
+    prisma.ticket.count({ where: { status: 'NEW' } }),
+    prisma.ticket.count({ where: { status: 'PROCESSING' } }),
+    prisma.ticket.count({ where: { status: 'OPEN' } }),
+    prisma.ticket.count({ where: { status: 'RESOLVED' } }),
+    prisma.ticket.count({ where: { status: 'CLOSED' } }),
+    prisma.ticket.groupBy({ by: ['category'], _count: { id: true } }),
+  ]);
+
+  const recent = await prisma.ticket.findMany({
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    include: { assignedTo: { select: { name: true } } },
+  });
+
+  res.json({ total, new: newCount, processing, open, resolved, closed, byCategory, recent });
+};

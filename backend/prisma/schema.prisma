@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum TicketStatus {
+  NEW
+  PROCESSING
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  GENERAL_QUESTION
+  TECHNICAL_QUESTION
+  REFUND_REQUEST
+}
+
+enum TicketSource {
+  EMAIL
+  MANUAL
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(AGENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedTickets Ticket[] @relation("AssignedTo")
+  replies         Reply[]
+}
+
+model Ticket {
+  id             String         @id @default(cuid())
+  subject        String
+  body           String
+  status         TicketStatus   @default(NEW)
+  category       TicketCategory @default(GENERAL_QUESTION)
+  fromEmail      String
+  fromName       String
+  summary        String?
+  suggestedReply String?
+  aiClassified   Boolean        @default(false)
+  aiResolved     Boolean        @default(false)
+  source         TicketSource   @default(MANUAL)
+
+  assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId String?
+
+  replies   Reply[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reply {
+  id           String   @id @default(cuid())
+  body         String
+  isAI         Boolean  @default(false)
+  sentViaEmail Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId String
+
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId String?
+}
+
+model KnowledgeBase {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  category  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

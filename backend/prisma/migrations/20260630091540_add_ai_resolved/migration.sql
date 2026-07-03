@@ -1,0 +1,1 @@
+ALTER TABLE "Ticket" ADD COLUMN "aiResolved" BOOLEAN NOT NULL DEFAULT false;
