@@ -168,7 +168,12 @@ export default function TicketDetail() {
               {new Date(ticket.createdAt).toLocaleString()}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            {ticket.aiResolved && (
+              <Badge className="text-[10px] h-5 px-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold flex items-center gap-1">
+                <Bot className="w-3 h-3" /> Auto-resolved
+              </Badge>
+            )}
             <CategoryBadge category={ticket.category} />
             <StatusBadge status={ticket.status} />
           </div>

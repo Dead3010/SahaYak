@@ -2,6 +2,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser, ParsedMail } from 'mailparser';
 import { prisma } from '../lib/prisma';
 import { classifyTicket } from './aiService';
+import { triggerAutoResolve } from '../controllers/ticketController';
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -70,6 +71,8 @@ async function fetchUnreadEmails() {
                 prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } })
               )
               .catch(() => {});
+
+            triggerAutoResolve(ticket.id).catch(() => {});
           } catch {
             // skip malformed messages
           }

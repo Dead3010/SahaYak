@@ -124,6 +124,9 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
   const ticket = await prisma.ticket.create({
     data: { subject, body, fromEmail, fromName, source: 'MANUAL' },
   });
+
+  triggerAutoResolve(ticket.id).catch(() => {});
+
   res.status(201).json({ ticket });
 };
 

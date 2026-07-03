@@ -31,6 +31,7 @@ export interface Ticket {
   summary: string | null;
   suggestedReply: string | null;
   aiClassified: boolean;
+  aiResolved: boolean;
   source: TicketSource;
   assignedTo: { id: string; name: string; email: string } | null;
   replies?: Reply[];

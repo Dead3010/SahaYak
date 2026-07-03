@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, Inbox, Mail, Plus, UserCircle, CalendarDays } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox, Mail, Plus, UserCircle, CalendarDays, Bot } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge } from '../components/StatusBadge';
@@ -314,6 +314,11 @@ export default function Tickets() {
                   {ticket.aiClassified && (
                     <Badge className="text-[10px] px-2 py-0 h-4 rounded-full bg-purple-50 text-purple-600 border border-purple-200 font-semibold">
                       AI
+                    </Badge>
+                  )}
+                  {ticket.aiResolved && (
+                    <Badge className="text-[10px] px-2 py-0 h-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 font-semibold flex items-center gap-0.5">
+                      <Bot className="w-2.5 h-2.5" /> Auto-resolved
                     </Badge>
                   )}
                 </div>

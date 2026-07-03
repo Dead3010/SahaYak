@@ -16,7 +16,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<void> {
 
   const { error } = await resend.emails.send({
     from: `${fromName} <${fromEmail}>`,
-    to: `${options.toName} <${options.to}>`,
+    to: options.to.trim(),
     subject: options.subject.startsWith('Re:') ? options.subject : `Re: ${options.subject}`,
     text: options.body,
     html: options.body.replace(/\n/g, '<br>'),
