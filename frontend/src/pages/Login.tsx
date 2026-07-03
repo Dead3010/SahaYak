@@ -185,6 +185,31 @@ export default function Login() {
               </span>
             </p>
           </div>
+
+          {/* Demo credentials */}
+          <div className="mt-4 rounded-xl px-6 py-4" style={{ backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#94a3b8' }}>Demo credentials</p>
+            <div className="space-y-2">
+              {[
+                { role: 'Admin', email: 'Mishraji@helpdesk.com', password: 'yash3010' },
+                { role: 'Agent', email: 'agent@helpdesk.com', password: 'Agent@123456' },
+              ].map(({ role, email, password }) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => { setEmail(email); setPassword(password); }}
+                  className="w-full text-left rounded-lg px-3 py-2.5 transition-colors duration-150 hover:bg-white"
+                  style={{ border: '1px solid #e2e8f0' }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: '#1e3a8a' }}>{role}</span>
+                  <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                    {email} · <span style={{ color: '#94a3b8' }}>{password}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
