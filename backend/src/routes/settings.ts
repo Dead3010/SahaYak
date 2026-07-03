@@ -20,8 +20,9 @@ router.post('/demo-inquiry', async (req: Request, res: Response) => {
   }
 
   try {
+    const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
     await sendEmail({
-      to: process.env.GMAIL_USER!,
+      to: notifyEmail,
       toName: 'SahaYak AI',
       subject: `New Demo Inquiry from ${name}`,
       body: `You have a new demo inquiry:\n\nName: ${name}\nContact: ${contact || '—'}\nEmail: ${email}\nOrganization: ${org || '—'}\nInterested in: ${interest || '—'}`,
