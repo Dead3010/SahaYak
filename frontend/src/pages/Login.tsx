@@ -203,7 +203,7 @@ export default function Login() {
                 >
                   <span className="text-xs font-semibold" style={{ color: '#1e3a8a' }}>{role}</span>
                   <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>
-                    {email} · <span style={{ color: '#94a3b8' }}>{password}</span>
+                    {email} · <span style={{ color: '#94a3b8' }}>Pass: {password}</span>
                   </div>
                 </button>
               ))}
