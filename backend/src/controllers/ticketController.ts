@@ -255,6 +255,21 @@ export const addReply = async (req: AuthRequest, res: Response) => {
   res.status(201).json({ reply });
 };
 
+export const addComment = async (req: AuthRequest, res: Response) => {
+  const { body } = req.body;
+  if (!body) { res.status(400).json({ error: 'body is required' }); return; }
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id as string } });
+  if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+  const comment = await prisma.reply.create({
+    data: { body, isAI: false, isInternal: true, sentViaEmail: false, ticketId: ticket.id, authorId: req.user!.id },
+    include: { author: { select: { id: true, name: true } } },
+  });
+
+  res.status(201).json({ comment });
+};
+
 export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
   const [total, newCount, processing, open, resolved, closed, byCategory] = await Promise.all([
     prisma.ticket.count(),

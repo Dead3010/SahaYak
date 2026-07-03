@@ -47,6 +47,8 @@ export const api = {
     delete: (id: string) => request<{ message: string }>('DELETE', `/tickets/${id}`),
     addReply: (id: string, body: string, sendEmail: boolean) =>
       request<{ reply: import('../types').Reply }>('POST', `/tickets/${id}/replies`, { body, sendEmail }),
+    addComment: (id: string, body: string) =>
+      request<{ comment: import('../types').Reply }>('POST', `/tickets/${id}/comments`, { body }),
     stats: () => request<import('../types').DashboardStats>('GET', '/tickets/stats'),
   },
 

@@ -70,6 +70,7 @@ model Reply {
   id           String   @id @default(cuid())
   body         String
   isAI         Boolean  @default(false)
+  isInternal   Boolean  @default(false)
   sentViaEmail Boolean  @default(false)
   createdAt    DateTime @default(now())
 

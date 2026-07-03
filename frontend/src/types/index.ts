@@ -15,6 +15,7 @@ export interface Reply {
   id: string;
   body: string;
   isAI: boolean;
+  isInternal: boolean;
   sentViaEmail: boolean;
   createdAt: string;
   author: { id: string; name: string } | null;

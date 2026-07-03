@@ -9,6 +9,7 @@ import {
   summarizeTicketHandler,
   suggestReplyHandler,
   addReply,
+  addComment,
   getDashboardStats,
 } from '../controllers/ticketController';
 import { authenticate } from '../middleware/auth';
@@ -27,5 +28,6 @@ router.post('/:id/classify', classifyTicketHandler);
 router.post('/:id/summarize', summarizeTicketHandler);
 router.post('/:id/suggest-reply', suggestReplyHandler);
 router.post('/:id/replies', addReply);
+router.post('/:id/comments', addComment);
 
 export default router;
