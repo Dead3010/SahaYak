@@ -1,15 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  family: 4,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export interface SendEmailOptions {
   to: string;
@@ -20,11 +11,16 @@ export interface SendEmailOptions {
 }
 
 export async function sendEmail(options: SendEmailOptions): Promise<void> {
-  await transporter.sendMail({
-    from: `"${process.env.EMAIL_FROM_NAME || 'HelpDesk Support'}" <${process.env.GMAIL_USER}>`,
-    to: `"${options.toName}" <${options.to}>`,
+  const fromName = process.env.EMAIL_FROM_NAME || 'HelpDesk Support';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+  const { error } = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: `${options.toName} <${options.to}>`,
     subject: options.subject.startsWith('Re:') ? options.subject : `Re: ${options.subject}`,
     text: options.body,
     html: options.body.replace(/\n/g, '<br>'),
   });
+
+  if (error) throw new Error(error.message);
 }
