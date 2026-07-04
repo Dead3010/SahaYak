@@ -3,11 +3,20 @@ export type TicketStatus = 'NEW' | 'PROCESSING' | 'OPEN' | 'RESOLVED' | 'CLOSED'
 export type TicketCategory = 'GENERAL_QUESTION' | 'TECHNICAL_QUESTION' | 'REFUND_REQUEST';
 export type TicketSource = 'EMAIL' | 'MANUAL';
 
+export interface Team {
+  id: string;
+  name: string;
+  category: TicketCategory;
+  members: { id: string; name: string; email: string; role: Role }[];
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: Role;
+  teamId: string | null;
   createdAt: string;
 }
 
@@ -35,6 +44,8 @@ export interface Ticket {
   aiResolved: boolean;
   source: TicketSource;
   assignedTo: { id: string; name: string; email: string } | null;
+  teamId: string | null;
+  team: { id: string; name: string } | null;
   replies?: Reply[];
   _count?: { replies: number };
   createdAt: string;

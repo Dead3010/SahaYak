@@ -31,7 +31,7 @@ If the email does not arrive within 10 minutes, contact support.
 
 ## 2. Course Access & Purchases
 
-### Q: I purchased a course but cannot see it.
+### Q: I    
 
 Possible reasons: - You are logged in with a different email address. -
 The payment is still processing. - The purchase was not completed

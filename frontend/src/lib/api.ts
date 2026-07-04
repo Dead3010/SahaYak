@@ -58,6 +58,15 @@ export const api = {
       request<{ ok: boolean }>('POST', '/settings/demo-inquiry', data),
   },
 
+  teams: {
+    list: () => request<{ teams: import('../types').Team[] }>('GET', '/teams'),
+    create: (data: { name: string; category: string }) => request<{ team: import('../types').Team }>('POST', '/teams', data),
+    update: (id: string, data: { name: string }) => request<{ team: import('../types').Team }>('PATCH', `/teams/${id}`, data),
+    delete: (id: string) => request<{ message: string }>('DELETE', `/teams/${id}`),
+    addMember: (teamId: string, userId: string) => request<{ team: import('../types').Team }>('POST', `/teams/${teamId}/members`, { userId }),
+    removeMember: (teamId: string, userId: string) => request<{ team: import('../types').Team }>('DELETE', `/teams/${teamId}/members/${userId}`),
+  },
+
   users: {
     list: () => request<{ users: import('../types').User[] }>('GET', '/users'),
     create: (data: { email: string; password: string; name: string; role: string }) =>

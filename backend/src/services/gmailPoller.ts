@@ -67,12 +67,13 @@ async function fetchUnreadEmails() {
             client.messageFlagsAdd({ uid: msg.uid } as unknown as number[], ['\\Seen'], { uid: true }).catch(() => {});
 
             classifyTicket(subject, body)
-              .then((category) =>
-                prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } })
-              )
-              .catch(() => {});
-
-            triggerAutoResolve(ticket.id).catch(() => {});
+              .then(async (category) => {
+                await prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } });
+              })
+              .catch(() => {})
+              .finally(() => {
+                triggerAutoResolve(ticket.id).catch(() => {});
+              });
           } catch {
             // skip malformed messages
           }

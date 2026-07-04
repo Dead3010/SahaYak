@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Inbox, Users, LogOut, Headphones, Mail } from 'lucide-react';
+import { LayoutDashboard, Inbox, Users, LogOut, Headphones, Mail, UsersRound } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ const navItems = [
 
 const adminItems = [
   { to: '/users', label: 'Users', icon: Users, end: false },
+  { to: '/teams', label: 'Teams', icon: UsersRound, end: false },
   { to: '/email-setup', label: 'Email Setup', icon: Mail, end: false },
 ];
 

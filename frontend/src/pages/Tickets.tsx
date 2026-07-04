@@ -349,6 +349,11 @@ export default function Tickets() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {ticket.team && (
+                  <span className="hidden sm:flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                    {ticket.team.name}
+                  </span>
+                )}
                 {ticket.assignedTo && (
                   <span className="hidden sm:flex items-center gap-1 text-xs text-slate-400">
                     <UserCircle className="w-3.5 h-3.5" />

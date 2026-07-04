@@ -23,7 +23,26 @@ export async function triggerAutoResolve(ticketId: string) {
         .then(() => console.log(`[AutoResolve] email sent to ${ticket.fromEmail}`))
         .catch((e) => console.error(`[AutoResolve] email FAILED: ${e.message}`));
     } else {
-      await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'OPEN' } });
+      // Re-fetch to get category set by classifier (may have run concurrently)
+      const fresh = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      const category = fresh?.category ?? 'GENERAL_QUESTION';
+
+      const team = await prisma.team.findFirst({
+        where: { category },
+        include: { members: { where: { role: 'AGENT' } } },
+      });
+
+      if (team && team.members.length > 0) {
+        const agent = team.members[Math.floor(Math.random() * team.members.length)];
+        console.log(`[AutoResolve] assigning ticket=${ticketId} to team="${team.name}" agent="${agent.name}"`);
+        await prisma.ticket.update({
+          where: { id: ticketId },
+          data: { status: 'OPEN', assignedToId: agent.id, teamId: team.id },
+        });
+      } else {
+        console.log(`[AutoResolve] no team/agents found for category=${category}, leaving unassigned`);
+        await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'OPEN' } });
+      }
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -84,6 +103,7 @@ export const listTickets = async (req: AuthRequest, res: Response) => {
       take,
       include: {
         assignedTo: { select: { id: true, name: true, email: true } },
+        team: { select: { id: true, name: true } },
         _count: { select: { replies: true } },
       },
     }),
@@ -99,6 +119,7 @@ export const getTicket = async (req: AuthRequest, res: Response) => {
       where: { id: (req.params.id as string) },
       include: {
         assignedTo: { select: { id: true, name: true, email: true } },
+        team: { select: { id: true, name: true } },
         replies: {
           orderBy: { createdAt: 'asc' },
           include: { author: { select: { id: true, name: true } } },

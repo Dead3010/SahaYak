@@ -7,7 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Tickets from './pages/Tickets';
 import TicketDetail from './pages/TicketDetail';
 import Users from './pages/Users';
- import EmailSetup from './pages/EmailSetup';
+import Teams from './pages/Teams';
+import EmailSetup from './pages/EmailSetup';
 import Forbidden from './pages/Forbidden';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -56,6 +57,14 @@ export default function App() {
               element={
                 <RequireAdmin>
                   <Users />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/teams"
+              element={
+                <RequireAdmin>
+                  <Teams />
                 </RequireAdmin>
               }
             />

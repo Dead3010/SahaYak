@@ -31,6 +31,17 @@ enum TicketSource {
   MANUAL
 }
 
+model Team {
+  id        String         @id @default(cuid())
+  name      String
+  category  TicketCategory @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  members User[]
+  tickets Ticket[]
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -39,6 +50,9 @@ model User {
   role      Role     @default(AGENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id])
 
   assignedTickets Ticket[] @relation("AssignedTo")
   replies         Reply[]
@@ -60,6 +74,9 @@ model Ticket {
 
   assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
   assignedToId String?
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id])
 
   replies   Reply[]
   createdAt DateTime @default(now())
