@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../hooks/useAuth';
-import { Search, SlidersHorizontal, Inbox, Plus, UserCircle, CalendarDays, Bot } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge } from '../components/StatusBadge';
@@ -40,13 +39,12 @@ export default function Tickets() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [activePreset, setActivePreset] = useState('');
-  const [assignedToMe, setAssignedToMe] = useState(false);
+  const [assignedToId, setAssignedToId] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
 
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
@@ -86,7 +84,13 @@ export default function Tickets() {
   if (search) params.search = search;
   if (dateFrom) params.dateFrom = dateFrom;
   if (dateTo) params.dateTo = dateTo;
-  if (assignedToMe && user) params.assignedToId = user.id;
+  if (assignedToId) params.assignedToId = assignedToId;
+
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api.users.list(),
+  });
+  const agents = (usersData?.users ?? []).filter((u) => u.role === 'AGENT');
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ['tickets', params],
@@ -237,17 +241,20 @@ export default function Tickets() {
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 border border-white" />
           )}
         </button>
-        <button
-          onClick={() => { setAssignedToMe((v) => !v); resetPage(); }}
-          className={`flex items-center gap-1.5 text-sm px-3 h-9 rounded-lg border font-semibold shrink-0 transition-all duration-150 ${
-            assignedToMe
-              ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-200'
-              : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
-          }`}
-        >
-          <UserCircle className="w-4 h-4" />
-          Mine
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Ass. to</span>
+          <Select value={assignedToId || 'all'} onValueChange={(v) => { setAssignedToId(v === 'all' ? '' : v); resetPage(); }}>
+            <SelectTrigger className="w-36 rounded-lg border-slate-200 h-9">
+              <SelectValue placeholder="Anyone" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="all">Anyone</SelectItem>
+              {agents.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <Select value={status || 'all'} onValueChange={(v) => { setStatus(v === 'all' ? '' : v); resetPage(); }}>
           <SelectTrigger className="w-36 rounded-lg border-slate-200">
             <SelectValue placeholder="All Statuses" />
