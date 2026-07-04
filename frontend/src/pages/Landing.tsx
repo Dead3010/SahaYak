@@ -281,13 +281,27 @@ export default function Landing() {
           </div>
 
           {/* Image side */}
-          <div className="flex-shrink-0 lg:w-[420px] flex items-center justify-center">
-            <img
-              src="/images/support-agent-1.png"
-              alt="Support agent illustration"
-              className="w-full max-w-sm lg:max-w-full rounded-2xl"
-              style={{ filter: 'drop-shadow(0 8px 32px rgba(30,58,138,0.15))' }}
-            />
+          <div className="flex-shrink-0 lg:w-[420px] flex items-center justify-center" style={{ perspective: '900px' }}>
+            <div
+              className="relative float-3d"
+              style={{ transformStyle: 'preserve-3d' }}
+            >
+              <img
+                src="/images/support-agent-1.png"
+                alt="Support agent illustration"
+                className="w-full max-w-sm lg:max-w-full rounded-2xl"
+                style={{
+                  boxShadow: '-12px 20px 48px rgba(30,58,138,0.25), -4px 8px 16px rgba(30,58,138,0.15), 0 2px 4px rgba(0,0,0,0.08)',
+                }}
+              />
+              {/* 3D depth layer */}
+              <div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, transparent 100%)',
+                }}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -346,13 +360,27 @@ export default function Landing() {
           <div className="flex flex-col lg:flex-row items-center gap-14">
 
             {/* Image side */}
-            <div className="flex-shrink-0 lg:w-[360px] flex items-center justify-center">
-              <img
-                src="/images/support-agent-2.png"
-                alt="Customer support illustration"
-                className="w-full max-w-xs lg:max-w-full rounded-2xl"
-                style={{ filter: 'drop-shadow(0 8px 32px rgba(30,58,138,0.18))' }}
-              />
+            <div className="flex-shrink-0 lg:w-[360px] flex items-center justify-center" style={{ perspective: '900px' }}>
+              <div
+                className="relative float-3d-reverse"
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                <img
+                  src="/images/support-agent-2.png"
+                  alt="Customer support illustration"
+                  className="w-full max-w-xs lg:max-w-full rounded-2xl"
+                  style={{
+                    boxShadow: '12px 20px 48px rgba(30,58,138,0.25), 4px 8px 16px rgba(30,58,138,0.15), 0 2px 4px rgba(0,0,0,0.08)',
+                  }}
+                />
+                {/* 3D depth layer */}
+                <div
+                  className="absolute inset-0 rounded-2xl pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(225deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, transparent 100%)',
+                  }}
+                />
+              </div>
             </div>
 
             {/* Text + grid side */}

@@ -101,4 +101,20 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.10);
     transform: translateY(-2px);
   }
+  .float-3d {
+    animation: float3d 5s ease-in-out infinite;
+  }
+  @keyframes float3d {
+    0%   { transform: perspective(900px) rotateY(-12deg) rotateX(6deg) translateY(0px); }
+    50%  { transform: perspective(900px) rotateY(-12deg) rotateX(6deg) translateY(-14px); }
+    100% { transform: perspective(900px) rotateY(-12deg) rotateX(6deg) translateY(0px); }
+  }
+  .float-3d-reverse {
+    animation: float3dReverse 5s ease-in-out infinite;
+  }
+  @keyframes float3dReverse {
+    0%   { transform: perspective(900px) rotateY(12deg) rotateX(6deg) translateY(0px); }
+    50%  { transform: perspective(900px) rotateY(12deg) rotateX(6deg) translateY(-14px); }
+    100% { transform: perspective(900px) rotateY(12deg) rotateX(6deg) translateY(0px); }
+  }
 }
