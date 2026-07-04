@@ -281,26 +281,67 @@ export default function Landing() {
           </div>
 
           {/* Image side */}
-          <div className="flex-shrink-0 lg:w-[420px] flex items-center justify-center" style={{ perspective: '900px' }}>
-            <div
-              className="relative float-3d"
-              style={{ transformStyle: 'preserve-3d' }}
-            >
+          <div className="flex-shrink-0 lg:w-[420px] flex items-center justify-center">
+            <div className="relative hero-float" style={{ width: '100%', maxWidth: '420px' }}>
+
+              {/* Main image */}
               <img
                 src="/images/support-agent-1.png"
                 alt="Support agent illustration"
-                className="w-full max-w-sm lg:max-w-full rounded-2xl"
+                className="w-full rounded-2xl relative z-10"
                 style={{
-                  boxShadow: '-12px 20px 48px rgba(30,58,138,0.25), -4px 8px 16px rgba(30,58,138,0.15), 0 2px 4px rgba(0,0,0,0.08)',
+                  filter: 'drop-shadow(0 12px 36px rgba(30,58,138,0.22))',
                 }}
               />
-              {/* 3D depth layer */}
-              <div
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 50%, transparent 100%)',
-                }}
-              />
+
+              {/* Flying hands — come one by one from the left toward the agent */}
+              {[
+                { delay: '0s',    top: '38%', size: '2.2rem' },
+                { delay: '0.9s',  top: '52%', size: '1.9rem' },
+                { delay: '1.8s',  top: '30%', size: '2.4rem' },
+                { delay: '2.7s',  top: '62%', size: '2rem'   },
+              ].map((h, i) => (
+                <span
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    top: h.top,
+                    left: '4%',
+                    fontSize: h.size,
+                    animation: `flyHand 2.8s ${h.delay} ease-in-out infinite`,
+                    zIndex: 20,
+                    pointerEvents: 'none',
+                    display: 'block',
+                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.25))',
+                  }}
+                >✋</span>
+              ))}
+
+              {/* Frustrated question marks above the agent's head */}
+              {[
+                { delay: '0.4s',  top: '8%',  left: '54%', size: '2.6rem', color: '#ef4444' },
+                { delay: '1.3s',  top: '3%',  left: '68%', size: '1.9rem', color: '#f59e0b' },
+                { delay: '2.2s',  top: '10%', left: '43%', size: '2.1rem', color: '#8b5cf6' },
+              ].map((q, i) => (
+                <span
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    top: q.top,
+                    left: q.left,
+                    fontSize: q.size,
+                    color: q.color,
+                    fontWeight: 900,
+                    fontFamily: 'Inter, sans-serif',
+                    animation: `popQ 2.2s ${q.delay} ease-in-out infinite`,
+                    zIndex: 20,
+                    pointerEvents: 'none',
+                    textShadow: `0 2px 10px ${q.color}55`,
+                    lineHeight: 1,
+                  }}
+                >?</span>
+              ))}
+
             </div>
           </div>
         </div>
