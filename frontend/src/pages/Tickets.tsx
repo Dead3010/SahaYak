@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge } from '../components/StatusBadge';
