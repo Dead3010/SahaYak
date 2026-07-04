@@ -351,7 +351,12 @@ export default function Landing() {
                 src="/images/support-agent-2.png"
                 alt="Customer support illustration"
                 className="w-full max-w-xs lg:max-w-full rounded-2xl"
-                style={{ filter: 'drop-shadow(0 8px 32px rgba(30,58,138,0.18))' }}
+                style={{
+                  filter: 'drop-shadow(0 8px 32px rgba(30,58,138,0.18))',
+                  imageRendering: '-webkit-optimize-contrast',
+                  transform: 'translateZ(0)',
+                  WebkitBackfaceVisibility: 'hidden',
+                }}
               />
             </div>
 
