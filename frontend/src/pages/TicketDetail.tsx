@@ -28,7 +28,6 @@ export default function TicketDetail() {
   const [interimText, setInterimText] = useState('');
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const isListeningRef = useRef(false);
 
   const { data, isLoading: loading, isError, error: queryError } = useQuery({
     queryKey: ['ticket', id],
@@ -64,20 +63,21 @@ export default function TicketDetail() {
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
+      let newFinal = '';
       let interim = '';
-      let final = '';
+      // event.resultIndex tells us which result changed — only process from there
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          final += transcript;
+          newFinal += transcript;
         } else {
           interim += transcript;
         }
       }
-      if (final) {
+      if (newFinal) {
         setReplyBody((prev) => {
-          const separator = prev && !prev.endsWith(' ') ? ' ' : '';
-          return prev + separator + final.trim() + ' ';
+          const sep = prev && !prev.endsWith(' ') ? ' ' : '';
+          return prev + sep + newFinal.trim() + ' ';
         });
         setInterimText('');
       } else {
@@ -87,33 +87,27 @@ export default function TicketDetail() {
 
     recognition.onend = () => {
       setInterimText('');
-      // Auto-restart so silence doesn't cut off longer replies
-      if (isListeningRef.current) {
-        recognition.start();
-      } else {
-        setIsListening(false);
-      }
+      setIsListening(false);
+      recognitionRef.current = null;
     };
 
     recognition.onerror = (event: any) => {
       if (event.error === 'not-allowed') {
-        isListeningRef.current = false;
         setIsListening(false);
         setInterimText('');
       }
     };
 
     recognitionRef.current = recognition;
-    isListeningRef.current = true;
     setIsListening(true);
     recognition.start();
   };
 
   const stopListening = () => {
-    isListeningRef.current = false;
     setIsListening(false);
     setInterimText('');
     recognitionRef.current?.stop();
+    recognitionRef.current = null;
   };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ticket', id] });
