@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Headphones, Mail, LogOut, ChevronDown } from 'lucide-react';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+const SUPPORT_CONTACT = {
+  name: 'Yash Mishra',
+  role: 'Founder & Developer',
+  email: 'yashmishra3010@gmail.com',
+  phone: '+91 7575856512',
+};
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', initials: 'Da', color: '#1e3a8a', bg: '#dbeafe', end: true },
@@ -18,6 +26,7 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,6 +41,7 @@ export default function Sidebar() {
 
   const handleLogout = () => { setDropdownOpen(false); logout(); navigate('/login'); };
   const handleEmailSetup = () => { setDropdownOpen(false); navigate('/email-setup'); };
+  const handleContactSupport = () => { setDropdownOpen(false); setContactOpen(true); };
 
   const allItems = [...navItems, ...(user?.role === 'ADMIN' ? adminNavItems : [])];
 
@@ -93,7 +103,19 @@ export default function Sidebar() {
                   Email Setup
                 </button>
               )}
-              <div style={{ borderTop: user?.role === 'ADMIN' ? '1px solid #f1f5f9' : undefined }}>
+              <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                <button
+                  onClick={handleContactSupport}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
+                  style={{ color: '#374151' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f8fafc'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
+                >
+                  <HeadphonesIcon className="w-4 h-4 shrink-0" style={{ color: '#64748b' }} />
+                  Contact Support
+                </button>
+              </div>
+              <div style={{ borderTop: '1px solid #f1f5f9' }}>
                 <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
@@ -109,6 +131,64 @@ export default function Sidebar() {
           )}
         </div>
       </header>
+
+      {/* ── Contact Support dialog ── */}
+      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 font-bold flex items-center gap-2">
+              <HeadphonesIcon className="w-4 h-4 text-blue-600" />
+              Contact Support
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-2">
+            {/* Avatar */}
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)' }}
+            >
+              {SUPPORT_CONTACT.name.charAt(0)}
+            </div>
+            <div className="text-center">
+              <p className="text-base font-bold text-slate-900">{SUPPORT_CONTACT.name}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{SUPPORT_CONTACT.role}</p>
+            </div>
+            {/* Contact details */}
+            <div className="w-full space-y-2.5 mt-1">
+              <a
+                href={`mailto:${SUPPORT_CONTACT.email}`}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150"
+                style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#bfdbfe'; (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#eff6ff'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#f8fafc'; }}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#dbeafe' }}>
+                  <Mail className="w-4 h-4" style={{ color: '#1e3a8a' }} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email</p>
+                  <p className="text-sm font-semibold text-slate-800">{SUPPORT_CONTACT.email}</p>
+                </div>
+              </a>
+              <a
+                href={`tel:${SUPPORT_CONTACT.phone}`}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150"
+                style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#bfdbfe'; (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#eff6ff'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '#f8fafc'; }}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#dcfce7' }}>
+                  <Phone className="w-4 h-4" style={{ color: '#15803d' }} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Phone</p>
+                  <p className="text-sm font-semibold text-slate-800">{SUPPORT_CONTACT.phone}</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Left sidebar ── */}
       <aside

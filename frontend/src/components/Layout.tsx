@@ -6,7 +6,7 @@ export default function Layout() {
     <div className="min-h-screen" style={{ backgroundColor: '#f8fafc' }}>
       <Sidebar />
       <main className="pt-14 pl-52 min-h-screen">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 py-8">
+        <div className="w-full px-6 lg:px-8 py-8">
           <Outlet />
         </div>
       </main>

@@ -163,7 +163,7 @@ export default function TicketDetail() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-4xl animate-fade-in">
+      <div className="space-y-4 animate-fade-in">
         <div className="h-6 w-24 bg-slate-100 rounded-lg animate-pulse" />
         <div className="h-48 bg-white rounded-2xl border border-slate-100 animate-pulse" />
         <div className="h-36 bg-white rounded-2xl border border-slate-100 animate-pulse" />
@@ -173,7 +173,7 @@ export default function TicketDetail() {
 
   if (isError) {
     return (
-      <div className="space-y-3 max-w-4xl animate-fade-in">
+      <div className="space-y-3 animate-fade-in">
         <Button variant="ghost" size="sm" onClick={() => navigate('/tickets')} className="text-slate-500 -ml-2">
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Tickets
         </Button>
