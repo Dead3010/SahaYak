@@ -28,6 +28,7 @@ export default function TicketDetail() {
   const [interimText, setInterimText] = useState('');
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef(false);
 
   const { data, isLoading: loading, isError, error: queryError } = useQuery({
     queryKey: ['ticket', id],
@@ -58,55 +59,61 @@ export default function TicketDetail() {
     if (!SR) return;
 
     const recognition = new SR();
-    recognition.continuous = true;
+    // Single-utterance mode: Chrome gives exactly ONE final transcript per session.
+    // We restart manually between utterances, which eliminates the overlap/duplication
+    // that continuous: true causes (it re-fires cumulative phrases as finals).
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
     recognition.onresult = (event: any) => {
-      let newFinal = '';
-      let interim = '';
-      // event.resultIndex tells us which result changed — only process from there
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          newFinal += transcript;
-        } else {
-          interim += transcript;
-        }
-      }
-      if (newFinal) {
+      const result = event.results[0];
+      const transcript = result[0].transcript;
+      if (result.isFinal) {
         setReplyBody((prev) => {
           const sep = prev && !prev.endsWith(' ') ? ' ' : '';
-          return prev + sep + newFinal.trim() + ' ';
+          return prev + sep + transcript.trim() + ' ';
         });
         setInterimText('');
       } else {
-        setInterimText(interim);
+        setInterimText(transcript);
       }
     };
 
     recognition.onend = () => {
       setInterimText('');
-      setIsListening(false);
-      recognitionRef.current = null;
+      if (isListeningRef.current) {
+        // Start a fresh instance — previous session's results are gone, no duplication
+        startListening();
+      } else {
+        setIsListening(false);
+      }
     };
 
     recognition.onerror = (event: any) => {
+      // 'no-speech' is non-fatal — onend fires next and we restart
       if (event.error === 'not-allowed') {
+        isListeningRef.current = false;
         setIsListening(false);
         setInterimText('');
       }
     };
 
     recognitionRef.current = recognition;
-    setIsListening(true);
+    // Only set state on the first call — recursive restarts skip this
+    if (!isListeningRef.current) {
+      isListeningRef.current = true;
+      setIsListening(true);
+    }
     recognition.start();
   };
 
   const stopListening = () => {
+    // Set ref first so onend doesn't restart
+    isListeningRef.current = false;
     setIsListening(false);
     setInterimText('');
-    recognitionRef.current?.stop();
+    recognitionRef.current?.abort();
     recognitionRef.current = null;
   };
 
