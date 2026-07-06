@@ -297,7 +297,8 @@ export default function Tickets() {
           <p className="text-sm text-slate-400 mt-1">Try adjusting your filters or create a new ticket</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
+          <div className="min-w-[900px]">
           {/* Table header */}
           <div className="grid grid-cols-[1.5rem_1fr_11rem_auto] items-center gap-4 px-5 py-3 border-b border-slate-100 bg-slate-50/60">
             <span />
@@ -380,6 +381,7 @@ export default function Tickets() {
               </div>
             </Link>
           ))}
+          </div>
         </div>
       )}
 
