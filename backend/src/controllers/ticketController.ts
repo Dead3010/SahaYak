@@ -312,7 +312,7 @@ export const prioritizeTicketHandler = async (req: AuthRequest, res: Response) =
 };
 
 export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
-  const [total, newCount, processing, open, resolved, closed, byCategory] = await Promise.all([
+  const [total, newCount, processing, open, resolved, closed, byCategory, aiResolved, aiReplies] = await Promise.all([
     prisma.ticket.count(),
     prisma.ticket.count({ where: { status: 'NEW' } }),
     prisma.ticket.count({ where: { status: 'PROCESSING' } }),
@@ -320,6 +320,8 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
     prisma.ticket.count({ where: { status: 'RESOLVED' } }),
     prisma.ticket.count({ where: { status: 'CLOSED' } }),
     prisma.ticket.groupBy({ by: ['category'], _count: { id: true } }),
+    prisma.ticket.count({ where: { aiResolved: true } }),
+    prisma.reply.count({ where: { isAI: true, isInternal: false } }),
   ]);
 
   const recent = await prisma.ticket.findMany({
@@ -328,5 +330,8 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
     include: { assignedTo: { select: { name: true } } },
   });
 
-  res.json({ total, new: newCount, processing, open, resolved, closed, byCategory, recent });
+  const resolvedTotal = resolved + closed;
+  const aiResolutionRate = resolvedTotal > 0 ? Math.round((aiResolved / resolvedTotal) * 100) : 0;
+
+  res.json({ total, new: newCount, processing, open, resolved, closed, byCategory, recent, aiResolved, aiReplies, aiResolutionRate });
 };

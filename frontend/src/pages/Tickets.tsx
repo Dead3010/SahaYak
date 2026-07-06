@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle, BarChart3, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
@@ -41,6 +41,19 @@ export default function Tickets() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toDateStr = (d: Date) => d.toISOString().split('T')[0];
+
+  const { data: stats } = useQuery({
+    queryKey: ['tickets', 'stats'],
+    queryFn: () => api.tickets.stats(),
+    refetchInterval: 30000,
+  });
+
+  const statConfig = [
+    { label: 'Total', key: 'total' as const, link: '', icon: BarChart3, iconColor: '#d97706', numColor: '#92400e', cardBorder: '#fcd34d', cardBg: '#fffbeb' },
+    { label: 'Open', key: 'open' as const, link: '?status=OPEN', icon: Clock, iconColor: '#db2777', numColor: '#831843', cardBorder: '#f9a8d4', cardBg: '#fdf2f8' },
+    { label: 'Resolved', key: 'resolved' as const, link: '?status=RESOLVED', icon: CheckCircle2, iconColor: '#16a34a', numColor: '#14532d', cardBorder: '#86efac', cardBg: '#f0fdf4' },
+    { label: 'Closed', key: 'closed' as const, link: '?status=CLOSED', icon: XCircle, iconColor: '#4f46e5', numColor: '#3730a3', cardBorder: '#c7d2fe', cardBg: '#eef2ff' },
+  ];
 
   const applyPreset = (key: string) => {
     if (activePreset === key) { setActivePreset(''); setDateFrom(''); setDateTo(''); resetPage(); return; }
@@ -106,14 +119,35 @@ export default function Tickets() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="shrink-0">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Tickets</h1>
           <p className="text-sm text-slate-500 mt-1">{total} total tickets</p>
         </div>
+
+        {/* Stat cards */}
+        {stats && (
+          <div className="flex items-center gap-3 flex-1 justify-center flex-wrap">
+            {statConfig.map(({ label, key, link, icon: Icon, iconColor, numColor, cardBorder, cardBg }) => (
+              <button
+                key={key}
+                onClick={() => { if (link) navigate(`/tickets${link}`); }}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
+                style={{ backgroundColor: cardBg, border: `1.5px solid ${cardBorder}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+              >
+                <Icon className="w-4 h-4 shrink-0" style={{ color: iconColor }} />
+                <div className="text-left">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#94a3b8' }}>{label}</p>
+                  <p className="text-lg font-bold leading-none mt-0.5" style={{ color: numColor }}>{stats[key]}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
         <Button
           onClick={() => { setForm(EMPTY_FORM); setFormError(''); setDialogOpen(true); }}
-          className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200 hover:shadow-md transition-all duration-150"
+          className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200 hover:shadow-md transition-all duration-150 shrink-0"
         >
           <Plus className="w-4 h-4 mr-1.5" />
           New Ticket

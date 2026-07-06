@@ -63,4 +63,7 @@ export interface DashboardStats {
   closed: number;
   byCategory: Array<{ category: TicketCategory; _count: { id: number } }>;
   recent: Ticket[];
+  aiResolved: number;
+  aiReplies: number;
+  aiResolutionRate: number;
 }

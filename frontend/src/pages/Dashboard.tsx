@@ -1,55 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Clock, CheckCircle2, XCircle, ArrowRight, TrendingUp } from 'lucide-react';
+import { ArrowRight, TrendingUp, Bot, MessageSquare, CheckCircle2, Zap } from 'lucide-react';
 import { api } from '../lib/api';
 import { StatusBadge } from '../components/StatusBadge';
-
-const statConfig = [
-  {
-    label: 'Total Tickets',
-    key: 'total' as const,
-    link: '/tickets',
-    icon: BarChart3,
-    iconBg: '#fff3cd',
-    iconColor: '#d97706',
-    numColor: '#92400e',
-    cardBorder: '#fcd34d',
-    cardBg: '#fffbeb',
-  },
-  {
-    label: 'Open',
-    key: 'open' as const,
-    link: '/tickets?status=OPEN',
-    icon: Clock,
-    iconBg: '#fce7f3',
-    iconColor: '#db2777',
-    numColor: '#831843',
-    cardBorder: '#f9a8d4',
-    cardBg: '#fdf2f8',
-  },
-  {
-    label: 'Resolved',
-    key: 'resolved' as const,
-    link: '/tickets?status=RESOLVED',
-    icon: CheckCircle2,
-    iconBg: '#dcfce7',
-    iconColor: '#16a34a',
-    numColor: '#14532d',
-    cardBorder: '#86efac',
-    cardBg: '#f0fdf4',
-  },
-  {
-    label: 'Closed',
-    key: 'closed' as const,
-    link: '/tickets?status=CLOSED',
-    icon: XCircle,
-    iconBg: '#e0e7ff',
-    iconColor: '#4f46e5',
-    numColor: '#3730a3',
-    cardBorder: '#c7d2fe',
-    cardBg: '#eef2ff',
-  },
-];
 
 const cardShadow = '0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08)';
 const cardStyle = {
@@ -68,11 +21,6 @@ export default function Dashboard() {
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="h-7 w-48 rounded-lg animate-pulse" style={{ backgroundColor: '#e2e8f0' }} />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-32 rounded-xl animate-pulse" style={{ backgroundColor: '#f1f5f9' }} />
-          ))}
-        </div>
       </div>
     );
   }
@@ -100,34 +48,59 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-        {statConfig.map(({ label, key, link, icon: Icon, iconBg, iconColor, numColor, cardBorder, cardBg }) => (
-          <Link key={key} to={link}>
-            <div
-              className="rounded-xl p-5 cursor-pointer transition-all duration-200"
-              style={{ backgroundColor: cardBg, border: `1.5px solid ${cardBorder}`, boxShadow: cardShadow }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.boxShadow = '0 4px 14px rgba(30,58,138,0.10), 0 12px 32px rgba(30,58,138,0.12)';
-                el.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLDivElement;
-                el.style.boxShadow = cardShadow;
-                el.style.transform = 'translateY(0)';
-              }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>{label}</p>
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: iconBg }}>
-                  <Icon className="w-4.5 h-4.5" style={{ color: iconColor }} />
-                </div>
-              </div>
-              <p className="text-3xl font-bold" style={{ color: numColor }}>{stats[key]}</p>
+      {/* AI Performance */}
+      <div className="rounded-xl p-6" style={cardStyle}>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#ecfdf5' }}>
+            <Bot className="w-4 h-4" style={{ color: '#059669' }} />
+          </div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>AI Performance</h2>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#059669' }} />
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94a3b8' }}>Auto-resolved</span>
             </div>
-          </Link>
-        ))}
+            <p className="text-3xl font-bold" style={{ color: '#065f46' }}>{stats.aiResolved}</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <MessageSquare className="w-3.5 h-3.5" style={{ color: '#6366f1' }} />
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94a3b8' }}>AI Replies</span>
+            </div>
+            <p className="text-3xl font-bold" style={{ color: '#3730a3' }}>{stats.aiReplies}</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <Zap className="w-3.5 h-3.5" style={{ color: '#d97706' }} />
+              <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#94a3b8' }}>Resolution Rate</span>
+            </div>
+            <p className="text-3xl font-bold" style={{ color: '#92400e' }}>{stats.aiResolutionRate}%</p>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium" style={{ color: '#64748b' }}>AI vs Manual resolution</span>
+            <span className="text-xs font-semibold" style={{ color: '#059669' }}>{stats.aiResolutionRate}% AI</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#e2e8f0' }}>
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${stats.aiResolutionRate}%`,
+                background: 'linear-gradient(90deg, #34d399 0%, #059669 100%)',
+              }}
+            />
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-[10px]" style={{ color: '#94a3b8' }}>0%</span>
+            <span className="text-[10px]" style={{ color: '#94a3b8' }}>100%</span>
+          </div>
+        </div>
       </div>
 
       {/* Bottom row */}
@@ -155,16 +128,13 @@ export default function Dashboard() {
                   const barH = maxCount > 0 ? Math.max(8, Math.round((c._count.id / maxCount) * BAR_HEIGHT)) : 8;
                   return (
                     <div key={c.category} className="flex flex-col items-center gap-1.5 flex-1">
-                      {/* count label */}
                       <span className="text-sm font-bold" style={{ color: '#1e293b' }}>{c._count.id}</span>
-                      {/* bar wrapper — pushes bar to bottom */}
                       <div className="flex items-end w-full" style={{ height: BAR_HEIGHT }}>
                         <div
                           className="w-full rounded-t-lg transition-all duration-700"
                           style={{ height: barH, background: meta.gradient, boxShadow: '0 2px 8px rgba(0,0,0,0.10)' }}
                         />
                       </div>
-                      {/* category label */}
                       <span className="text-xs font-semibold text-center leading-tight" style={{ color: meta.labelColor }}>
                         {meta.label}
                       </span>
