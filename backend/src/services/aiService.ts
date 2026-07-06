@@ -8,8 +8,29 @@ const MODEL = 'gemini-2.5-flash';
 const getClient = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const safeText = (result: { response: { text: () => string } }): string => {
-  try { return safeText(result); } catch { return ''; }
+  try { return result.response.text().trim(); } catch { return ''; }
 };
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRateLimit = msg.includes('429') || msg.toLowerCase().includes('quota');
+      if (isRateLimit && i < retries - 1) {
+        const delay = (i + 1) * 15000;
+        console.log(`[AI] Rate limited, retrying in ${delay / 1000}s...`);
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
 
 export function parseGeminiError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
@@ -27,17 +48,16 @@ export async function classifyTicket(
   body: string
 ): Promise<TicketCategory> {
   const model = getClient().getGenerativeModel({ model: MODEL });
-  const result = await model.generateContent(
+  const result = await withRetry(() => model.generateContent(
     `Classify this support ticket into exactly one of these categories: GENERAL_QUESTION, TECHNICAL_QUESTION, REFUND_REQUEST.
 
 Subject: ${subject}
 Body: ${body}
 
 Respond with ONLY the category name, nothing else.`
-  );
+  ));
 
   const text = safeText(result).toUpperCase();
-
   if (text.includes('REFUND')) return 'REFUND_REQUEST';
   if (text.includes('TECHNICAL')) return 'TECHNICAL_QUESTION';
   return 'GENERAL_QUESTION';
@@ -49,7 +69,7 @@ export async function scorePriority(
   category: TicketCategory
 ): Promise<TicketPriority> {
   const model = getClient().getGenerativeModel({ model: MODEL });
-  const result = await model.generateContent(
+  const result = await withRetry(() => model.generateContent(
     `You are a support triage system. Score the priority of this ticket as exactly one of: LOW, MEDIUM, HIGH, URGENT.
 
 Guidelines:
@@ -63,7 +83,7 @@ Subject: ${subject}
 Body: ${body}
 
 Respond with ONLY the priority level, nothing else.`
-  );
+  ));
 
   const text = safeText(result).toUpperCase();
   if (text.includes('URGENT')) return 'URGENT';
@@ -74,14 +94,14 @@ Respond with ONLY the priority level, nothing else.`
 
 export async function summarizeTicket(subject: string, body: string): Promise<string> {
   const model = getClient().getGenerativeModel({ model: MODEL });
-  const result = await model.generateContent(
+  const result = await withRetry(() => model.generateContent(
     `Summarize this support ticket in 2-3 concise sentences. Focus on the core issue and what the customer needs.
 
 Subject: ${subject}
 Body: ${body}
 
 Write only the summary, no preamble.`
-  );
+  ));
 
   return safeText(result);
 }
