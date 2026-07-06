@@ -35,12 +35,10 @@ export default function Login() {
     setReportLoading(true);
     setReportError('');
     try {
-      await api.settings.demoInquiry({
+      await api.settings.reportIssue({
         name: reportForm.name,
         email: reportForm.email,
-        contact: '',
-        org: 'Login Issue',
-        interest: reportForm.message,
+        message: reportForm.message,
       });
       setReportSuccess(true);
     } catch {

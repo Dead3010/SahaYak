@@ -58,6 +58,8 @@ export const api = {
     get: () => request<{ supportEmail: string; webhookPath: string }>('GET', '/settings'),
     demoInquiry: (data: { name: string; contact: string; email: string; org: string; interest: string }) =>
       request<{ ok: boolean }>('POST', '/settings/demo-inquiry', data),
+    reportIssue: (data: { name: string; email: string; message: string }) =>
+      request<{ ok: boolean }>('POST', '/settings/report-issue', data),
   },
 
   teams: {

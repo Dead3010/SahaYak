@@ -12,6 +12,28 @@ router.get('/', authenticate, requireAdmin, (_req: AuthRequest, res: Response) =
   });
 });
 
+router.post('/report-issue', async (req: Request, res: Response) => {
+  const { name, email, message } = req.body;
+  if (!name || !email || !message) {
+    res.status(400).json({ error: 'name, email and message are required' });
+    return;
+  }
+
+  try {
+    const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
+    await sendEmail({
+      to: notifyEmail,
+      toName: 'SahaYak AI',
+      subject: `Login Issue Report from ${name}`,
+      body: `You have a new login issue report:\n\nName: ${name}\nEmail: ${email}\n\nIssue:\n${message}`,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('report-issue email error:', err);
+    res.status(500).json({ error: 'Failed to send report' });
+  }
+});
+
 router.post('/demo-inquiry', async (req: Request, res: Response) => {
   const { name, contact, email, org, interest } = req.body;
   if (!name || !email) {
