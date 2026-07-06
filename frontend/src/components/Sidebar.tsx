@@ -110,7 +110,8 @@ export default function Sidebar() {
           <span className="font-bold text-base" style={{ color: '#0f172a', letterSpacing: '-0.01em' }}>SahaYak AI</span>
         </div>
 
-        {/* Notification Bell */}
+        {/* Notification Bell + User pill */}
+        <div className="flex items-center gap-2">
         <div className="relative" ref={bellRef}>
           <button
             onClick={() => setBellOpen((o) => !o)}
@@ -235,6 +236,7 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+      </div>
       </header>
 
       {/* ── Contact Support dialog ── */}
