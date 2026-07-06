@@ -301,7 +301,7 @@ export default function Tickets() {
           <table className="w-full min-w-[860px] border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="w-10 pl-5 py-3" />
+                <th className="w-10 pl-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Pr.</th>
                 <th className="py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Ticket</th>
                 <th className="w-48 py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Assigned To</th>
                 <th className="w-32 py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Category</th>
