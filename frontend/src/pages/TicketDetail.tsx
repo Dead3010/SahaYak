@@ -120,7 +120,7 @@ export default function TicketDetail() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ticket', id] });
 
   const updateMutation = useMutation({
-    mutationFn: (patch: Partial<{ status: string; category: string; assignedToId: string | null }>) =>
+    mutationFn: (patch: Partial<{ status: string; category: string; assignedToId: string | null; priority: string }>) =>
       api.tickets.update(id!, patch),
     onSuccess: () => { invalidate(); setShowUpdate(false); },
   });
