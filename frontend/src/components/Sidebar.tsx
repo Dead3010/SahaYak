@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone } from 'lucide-react';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const SUPPORT_CONTACT = {
   name: 'Yash Mishra',
@@ -27,6 +32,11 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [bugOpen, setBugOpen] = useState(false);
+  const [bugForm, setBugForm] = useState({ name: '', email: '', description: '', steps: '' });
+  const [bugLoading, setBugLoading] = useState(false);
+  const [bugSuccess, setBugSuccess] = useState(false);
+  const [bugError, setBugError] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +52,33 @@ export default function Sidebar() {
   const handleLogout = () => { setDropdownOpen(false); logout(); navigate('/login'); };
   const handleEmailSetup = () => { setDropdownOpen(false); navigate('/email-setup'); };
   const handleContactSupport = () => { setDropdownOpen(false); setContactOpen(true); };
+  const handleReportBug = () => { setDropdownOpen(false); setBugOpen(true); };
+
+  const closeBug = () => {
+    setBugOpen(false);
+    setBugSuccess(false);
+    setBugError('');
+    setBugForm({ name: '', email: '', description: '', steps: '' });
+  };
+
+  const handleBugSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBugLoading(true);
+    setBugError('');
+    try {
+      await api.settings.reportBug({
+        name: bugForm.name,
+        email: bugForm.email,
+        description: bugForm.description,
+        steps: bugForm.steps || undefined,
+      });
+      setBugSuccess(true);
+    } catch {
+      setBugError('Failed to send. Please try again.');
+    } finally {
+      setBugLoading(false);
+    }
+  };
 
   const allItems = [...navItems, ...(user?.role === 'ADMIN' ? adminNavItems : [])];
 
@@ -117,6 +154,18 @@ export default function Sidebar() {
               </div>
               <div style={{ borderTop: '1px solid #f1f5f9' }}>
                 <button
+                  onClick={handleReportBug}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
+                  style={{ color: '#dc2626' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fef2f2'; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
+                >
+                  <Bug className="w-4 h-4 shrink-0" />
+                  Report Bug
+                </button>
+              </div>
+              <div style={{ borderTop: '1px solid #f1f5f9' }}>
+                <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-left transition-colors duration-150"
                   style={{ color: '#dc2626' }}
@@ -187,6 +236,71 @@ export default function Sidebar() {
               </a>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Bug Report dialog ── */}
+      <Dialog open={bugOpen} onOpenChange={(o) => { if (!o) closeBug(); }}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 font-bold flex items-center gap-2">
+              <Bug className="w-4 h-4 text-red-500" />
+              Report a Bug
+            </DialogTitle>
+          </DialogHeader>
+
+          {bugSuccess ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              <p className="text-sm font-semibold text-slate-800">Bug report sent!</p>
+              <p className="text-xs text-slate-500">We'll look into it and get back to you.</p>
+              <Button onClick={closeBug} className="mt-2 rounded-full font-semibold px-6">Done</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleBugSubmit} className="space-y-3 py-1">
+              {bugError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{bugError}</p>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sb-name" className="text-xs font-semibold text-slate-600">Your Name</Label>
+                  <Input id="sb-name" placeholder="John Doe" value={bugForm.name}
+                    onChange={(e) => setBugForm((f) => ({ ...f, name: e.target.value }))} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sb-email" className="text-xs font-semibold text-slate-600">Email</Label>
+                  <Input id="sb-email" type="email" placeholder="you@email.com" value={bugForm.email}
+                    onChange={(e) => setBugForm((f) => ({ ...f, email: e.target.value }))} className="h-9 text-sm" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sb-desc" className="text-xs font-semibold text-slate-600">Bug Description <span className="text-red-400">*</span></Label>
+                <Textarea id="sb-desc" rows={3}
+                  placeholder="What went wrong? e.g. 'Clicking Save on a ticket throws a 500 error.'"
+                  value={bugForm.description}
+                  onChange={(e) => setBugForm((f) => ({ ...f, description: e.target.value }))}
+                  className="resize-none text-sm rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sb-steps" className="text-xs font-semibold text-slate-600">
+                  Steps to Reproduce <span className="text-slate-400 font-normal">(optional)</span>
+                </Label>
+                <Textarea id="sb-steps" rows={3}
+                  placeholder={"1. Go to...\n2. Click on...\n3. See error"}
+                  value={bugForm.steps}
+                  onChange={(e) => setBugForm((f) => ({ ...f, steps: e.target.value }))}
+                  className="resize-none text-sm rounded-xl" />
+              </div>
+              <DialogFooter className="pt-1">
+                <Button type="button" variant="outline" onClick={closeBug} className="rounded-full">Cancel</Button>
+                <Button type="submit"
+                  disabled={bugLoading || !bugForm.name || !bugForm.email || !bugForm.description}
+                  className="rounded-full font-semibold bg-red-500 hover:bg-red-600 border-red-500">
+                  {bugLoading ? 'Sending…' : 'Send Report'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
 
