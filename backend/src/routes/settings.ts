@@ -34,6 +34,28 @@ router.post('/report-issue', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/report-bug', async (req: Request, res: Response) => {
+  const { name, email, description, steps } = req.body;
+  if (!name || !email || !description) {
+    res.status(400).json({ error: 'name, email and description are required' });
+    return;
+  }
+
+  try {
+    const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
+    await sendEmail({
+      to: notifyEmail,
+      toName: 'SahaYak AI',
+      subject: `Bug Report from ${name}`,
+      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}\n\nBug Description:\n${description}${steps ? `\n\nSteps to Reproduce:\n${steps}` : ''}`,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('report-bug email error:', err);
+    res.status(500).json({ error: 'Failed to send bug report' });
+  }
+});
+
 router.post('/demo-inquiry', async (req: Request, res: Response) => {
   const { name, contact, email, org, interest } = req.body;
   if (!name || !email) {

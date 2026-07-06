@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Headphones, Inbox, Users, Zap, BarChart2, ArrowRight, CheckCircle,
-  Clock, MessageSquare, ShieldCheck, Sparkles, Globe, Layers,
+  Clock, MessageSquare, ShieldCheck, Sparkles, Globe, Layers, Bug, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 const features = [
   {
@@ -115,6 +117,38 @@ export default function Landing() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({ name: '', contact: '', email: '', org: '', interest: '' });
+
+  const [bugOpen, setBugOpen] = useState(false);
+  const [bugForm, setBugForm] = useState({ name: '', email: '', description: '', steps: '' });
+  const [bugLoading, setBugLoading] = useState(false);
+  const [bugSuccess, setBugSuccess] = useState(false);
+  const [bugError, setBugError] = useState('');
+
+  const handleBugSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBugLoading(true);
+    setBugError('');
+    try {
+      await api.settings.reportBug({
+        name: bugForm.name,
+        email: bugForm.email,
+        description: bugForm.description,
+        steps: bugForm.steps || undefined,
+      });
+      setBugSuccess(true);
+    } catch {
+      setBugError('Failed to send. Please try again.');
+    } finally {
+      setBugLoading(false);
+    }
+  };
+
+  const closeBug = () => {
+    setBugOpen(false);
+    setBugSuccess(false);
+    setBugError('');
+    setBugForm({ name: '', email: '', description: '', steps: '' });
+  };
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -593,7 +627,7 @@ export default function Landing() {
             Have doubts or queries? Reach out directly — we're happy to help.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
             {/* Name card */}
             <div
               className="flex flex-col items-center gap-2 px-10 py-7 rounded-xl w-full sm:w-auto"
@@ -649,6 +683,17 @@ export default function Landing() {
               </div>
             </div>
           </div>
+          {/* Report Bug button */}
+          <div className="flex justify-center mt-2">
+            <button
+              onClick={() => setBugOpen(true)}
+              className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full transition-all duration-150 hover:shadow-md hover:-translate-y-0.5"
+              style={{ backgroundColor: '#ef4444', color: '#ffffff', border: '1px solid #dc2626', boxShadow: '0 2px 8px rgba(239,68,68,0.25)' }}
+            >
+              <Bug className="w-3.5 h-3.5" />
+              Report Bug
+            </button>
+          </div>
         </div>
       </section>
 
@@ -658,6 +703,70 @@ export default function Landing() {
       >
         © {new Date().getFullYear()} SahaYak AI · Built for teams that care about great support.
       </footer>
+
+      {/* Bug Report Dialog */}
+      <Dialog open={bugOpen} onOpenChange={(o) => { if (!o) closeBug(); }}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 font-bold flex items-center gap-2">
+              <Bug className="w-4 h-4 text-red-500" />
+              Report a Bug
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 text-xs">
+              Found something broken? Tell us and we'll fix it ASAP.
+            </DialogDescription>
+          </DialogHeader>
+
+          {bugSuccess ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              <p className="text-sm font-semibold text-slate-800">Bug report sent!</p>
+              <p className="text-xs text-slate-500">We'll look into it and get back to you.</p>
+              <Button onClick={closeBug} className="mt-2 rounded-full font-semibold px-6">Done</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleBugSubmit} className="space-y-3 py-1">
+              {bugError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{bugError}</p>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bug-name" className="text-xs font-semibold text-slate-600">Your Name</Label>
+                  <Input id="bug-name" placeholder="John Doe" value={bugForm.name}
+                    onChange={(e) => setBugForm((f) => ({ ...f, name: e.target.value }))} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bug-email" className="text-xs font-semibold text-slate-600">Email</Label>
+                  <Input id="bug-email" type="email" placeholder="you@email.com" value={bugForm.email}
+                    onChange={(e) => setBugForm((f) => ({ ...f, email: e.target.value }))} className="h-9 text-sm" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bug-desc" className="text-xs font-semibold text-slate-600">Bug Description <span className="text-red-400">*</span></Label>
+                <Textarea id="bug-desc" rows={3} placeholder="What went wrong? e.g. 'The login button doesn't respond after entering credentials.'" value={bugForm.description}
+                  onChange={(e) => setBugForm((f) => ({ ...f, description: e.target.value }))}
+                  className="resize-none text-sm rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bug-steps" className="text-xs font-semibold text-slate-600">Steps to Reproduce <span className="text-slate-400 font-normal">(optional)</span></Label>
+                <Textarea id="bug-steps" rows={3} placeholder="1. Go to...\n2. Click on...\n3. See error" value={bugForm.steps}
+                  onChange={(e) => setBugForm((f) => ({ ...f, steps: e.target.value }))}
+                  className="resize-none text-sm rounded-xl" />
+              </div>
+              <DialogFooter className="pt-1">
+                <Button type="button" variant="outline" onClick={closeBug} className="rounded-full">Cancel</Button>
+                <Button type="submit"
+                  disabled={bugLoading || !bugForm.name || !bugForm.email || !bugForm.description}
+                  className="rounded-full font-semibold"
+                  style={{ backgroundColor: '#ef4444', borderColor: '#ef4444' }}
+                >
+                  {bugLoading ? 'Sending…' : 'Send Report'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Demo Inquiry Dialog */}
       <Dialog open={demoOpen} onOpenChange={handleDemoClose}>
