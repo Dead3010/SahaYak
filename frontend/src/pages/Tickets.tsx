@@ -350,19 +350,16 @@ export default function Tickets() {
               </div>
 
               {/* Assigned To */}
-              <div className="min-w-0">
+              <div className="min-w-0 flex items-center">
                 {ticket.assignedTo || ticket.team ? (
-                  <div className="flex flex-col gap-0.5">
-                    {ticket.team && (
-                      <span className="text-xs font-semibold text-slate-700 truncate">{ticket.team.name}</span>
-                    )}
-                    {ticket.assignedTo && (
-                      <span className="flex items-center gap-1 text-xs text-slate-400 truncate">
-                        <UserCircle className="w-3 h-3 shrink-0" />
-                        {ticket.assignedTo.name}
-                      </span>
-                    )}
-                  </div>
+                  <span className="flex items-center gap-1.5 text-xs text-slate-600 truncate">
+                    <UserCircle className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                    <span className="truncate">
+                      {ticket.team?.name && ticket.assignedTo
+                        ? `${ticket.team.name} · ${ticket.assignedTo.name}`
+                        : ticket.team?.name ?? ticket.assignedTo?.name}
+                    </span>
+                  </span>
                 ) : (
                   <span className="text-xs text-slate-300 italic">Unassigned</span>
                 )}
