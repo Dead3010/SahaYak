@@ -333,11 +333,6 @@ export default function Tickets() {
                       <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors duration-150">
                         {ticket.subject}
                       </span>
-                      {ticket.aiResolved && (
-                        <Badge className="text-[10px] px-2 py-0 h-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 font-semibold flex items-center gap-0.5">
-                          <Bot className="w-2.5 h-2.5" /> Auto-resolved
-                        </Badge>
-                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-slate-400 truncate max-w-xs">
@@ -355,7 +350,11 @@ export default function Tickets() {
 
                   {/* Assigned To */}
                   <td className="py-4 px-3 w-48">
-                    {ticket.assignedTo || ticket.team ? (
+                    {ticket.aiResolved && !ticket.assignedTo ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <Bot className="w-3 h-3" /> AI
+                      </span>
+                    ) : ticket.assignedTo || ticket.team ? (
                       <div className="flex flex-col gap-0.5">
                         {ticket.team && (
                           <span className="text-xs font-semibold text-slate-700">{ticket.team.name}</span>
