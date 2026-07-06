@@ -160,10 +160,11 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateTicket = async (req: AuthRequest, res: Response) => {
-  const { status, category, assignedToId } = req.body;
+  const { status, category, assignedToId, priority } = req.body;
   const data: Record<string, unknown> = {};
   if (status) data.status = status;
   if (category) data.category = category;
+  if (priority) data.priority = priority as TicketPriority;
   if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
 
   const ticket = await prisma.ticket.update({

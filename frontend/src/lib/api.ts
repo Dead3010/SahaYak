@@ -36,7 +36,7 @@ export const api = {
     get: (id: string) => request<{ ticket: import('../types').Ticket }>('GET', `/tickets/${id}`),
     create: (data: { subject: string; body: string; fromEmail: string; fromName: string }) =>
       request<{ ticket: import('../types').Ticket }>('POST', '/tickets', data),
-    update: (id: string, data: Partial<{ status: string; category: string; assignedToId: string | null }>) =>
+    update: (id: string, data: Partial<{ status: string; category: string; assignedToId: string | null; priority: string }>) =>
       request<{ ticket: import('../types').Ticket }>('PATCH', `/tickets/${id}`, data),
     classify: (id: string) =>
       request<{ ticket: import('../types').Ticket; category: string }>('POST', `/tickets/${id}/classify`),

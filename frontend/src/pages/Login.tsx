@@ -1,10 +1,13 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Headphones, BarChart2, ShieldCheck, Users, ArrowLeft } from 'lucide-react';
+import { Headphones, BarChart2, ShieldCheck, Users, ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 const features = [
   { icon: BarChart2, title: 'Real-time Analytics', desc: 'Track ticket trends and team performance at a glance.' },
@@ -19,6 +22,40 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportForm, setReportForm] = useState({ name: '', email: '', message: '' });
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState('');
+
+  const handleReport = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!reportForm.name || !reportForm.email || !reportForm.message) return;
+    setReportLoading(true);
+    setReportError('');
+    try {
+      await api.settings.demoInquiry({
+        name: reportForm.name,
+        email: reportForm.email,
+        contact: '',
+        org: 'Login Issue',
+        interest: reportForm.message,
+      });
+      setReportSuccess(true);
+    } catch {
+      setReportError('Failed to send. Please try again.');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const closeReport = () => {
+    setReportOpen(false);
+    setReportSuccess(false);
+    setReportError('');
+    setReportForm({ name: '', email: '', message: '' });
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -212,6 +249,68 @@ export default function Login() {
 
         </div>
       </div>
+      {/* Report an Issue — floating button */}
+      <button
+        onClick={() => setReportOpen(true)}
+        className="fixed bottom-5 right-5 flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-full shadow-md transition-all duration-150 hover:shadow-lg hover:-translate-y-0.5"
+        style={{ backgroundColor: '#ef4444', border: '1px solid #dc2626', color: '#ffffff' }}
+      >
+        <AlertCircle className="w-3.5 h-3.5 text-white" />
+        Report an Issue
+      </button>
+
+      {/* Report an Issue — dialog */}
+      <Dialog open={reportOpen} onOpenChange={(o) => { if (!o) closeReport(); }}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              Report an Issue
+            </DialogTitle>
+          </DialogHeader>
+
+          {reportSuccess ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+              <p className="text-sm font-semibold text-slate-800">Report sent!</p>
+              <p className="text-xs text-slate-500">We'll look into this and get back to you at the email you provided.</p>
+              <Button onClick={closeReport} className="mt-2 rounded-full font-semibold px-6">Done</Button>
+            </div>
+          ) : (
+            <form onSubmit={handleReport} className="space-y-4 py-1">
+              <p className="text-xs text-slate-500">
+                Having trouble signing in? Describe your issue and we'll follow up.
+              </p>
+              {reportError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{reportError}</p>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="r-name" className="text-xs font-semibold text-slate-600">Your Name</Label>
+                <Input id="r-name" placeholder="John Doe" value={reportForm.name}
+                  onChange={(e) => setReportForm((f) => ({ ...f, name: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="r-email" className="text-xs font-semibold text-slate-600">Your Email</Label>
+                <Input id="r-email" type="email" placeholder="you@company.com" value={reportForm.email}
+                  onChange={(e) => setReportForm((f) => ({ ...f, email: e.target.value }))} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="r-message" className="text-xs font-semibold text-slate-600">Describe your issue</Label>
+                <Textarea id="r-message" rows={4} placeholder="e.g. I can't log in — getting 'Invalid credentials' even though my password is correct. Please describe your issue in as much detail as possible." value={reportForm.message}
+                  onChange={(e) => setReportForm((f) => ({ ...f, message: e.target.value }))}
+                  className="resize-none text-sm rounded-xl" />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeReport} className="rounded-full">Cancel</Button>
+                <Button type="submit" disabled={reportLoading || !reportForm.name || !reportForm.email || !reportForm.message}
+                  className="rounded-full font-semibold">
+                  {reportLoading ? 'Sending…' : 'Send Report'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

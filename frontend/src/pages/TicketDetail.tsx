@@ -21,7 +21,7 @@ export default function TicketDetail() {
   const [commentBody, setCommentBody] = useState('');
   const [commentError, setCommentError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '' });
+  const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '', priority: '' });
   const [showUpdate, setShowUpdate] = useState(false);
 
   const [isListening, setIsListening] = useState(false);
@@ -46,7 +46,7 @@ export default function TicketDetail() {
 
   useEffect(() => {
     if (ticket) {
-      setUpdateForm({ status: ticket.status, category: ticket.category, assignedToId: ticket.assignedTo?.id ?? '' });
+      setUpdateForm({ status: ticket.status, category: ticket.category, assignedToId: ticket.assignedTo?.id ?? '', priority: ticket.priority });
     }
   }, [ticket]);
 
@@ -462,6 +462,18 @@ export default function TicketDetail() {
                   </Select>
                 </div>
                 <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-1">Priority</p>
+                  <Select value={updateForm.priority} onValueChange={(v) => setUpdateForm((f) => ({ ...f, priority: v }))}>
+                    <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="URGENT">🔴 Urgent</SelectItem>
+                      <SelectItem value="HIGH">🟠 High</SelectItem>
+                      <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
+                      <SelectItem value="LOW">⚪ Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <p className="text-xs font-semibold text-slate-500 mb-1">Assigned to</p>
                   <Select
                     value={updateForm.assignedToId || 'unassigned'}
@@ -480,6 +492,7 @@ export default function TicketDetail() {
                   onClick={() => updateMutation.mutate({
                     status: updateForm.status,
                     category: updateForm.category,
+                    priority: updateForm.priority,
                     assignedToId: updateForm.assignedToId || null,
                   })}
                   disabled={updateMutation.isPending}
