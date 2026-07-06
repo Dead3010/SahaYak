@@ -47,13 +47,21 @@ export function PriorityBadge({ priority, compact = false }: { priority: TicketP
     MEDIUM: 'Medium',
     LOW:    'Low',
   };
+  if (compact) {
+    return (
+      <span className="text-base leading-none" title={labels[priority]}>
+        {icons[priority]}
+      </span>
+    );
+  }
+
   return (
     <Badge
       className="text-xs rounded-full font-semibold transition-colors duration-300"
-      style={{ ...styles[priority], padding: compact ? '2px 6px' : undefined }}
+      style={styles[priority]}
       title={labels[priority]}
     >
-      {compact ? icons[priority] : `${icons[priority]} ${labels[priority]}`}
+      {`${icons[priority]} ${labels[priority]}`}
     </Badge>
   );
 }
