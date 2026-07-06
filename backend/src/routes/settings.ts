@@ -35,7 +35,7 @@ router.post('/report-issue', async (req: Request, res: Response) => {
 });
 
 router.post('/report-bug', async (req: Request, res: Response) => {
-  const { name, email, description, steps } = req.body;
+  const { name, email, description, area } = req.body;
   if (!name || !email || !description) {
     res.status(400).json({ error: 'name, email and description are required' });
     return;
@@ -47,7 +47,7 @@ router.post('/report-bug', async (req: Request, res: Response) => {
       to: notifyEmail,
       toName: 'SahaYak AI',
       subject: `Bug Report from ${name}`,
-      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}\n\nBug Description:\n${description}${steps ? `\n\nSteps to Reproduce:\n${steps}` : ''}`,
+      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}${area ? `\nAffected Area: ${area}` : ''}\n\nBug Description:\n${description}`,
     });
     res.json({ ok: true });
   } catch (err) {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SUPPORT_CONTACT = {
   name: 'Yash Mishra',
@@ -33,7 +34,7 @@ export default function Sidebar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
-  const [bugForm, setBugForm] = useState({ name: '', email: '', description: '', steps: '' });
+  const [bugForm, setBugForm] = useState({ name: '', email: '', area: '', description: '' });
   const [bugLoading, setBugLoading] = useState(false);
   const [bugSuccess, setBugSuccess] = useState(false);
   const [bugError, setBugError] = useState('');
@@ -58,7 +59,7 @@ export default function Sidebar() {
     setBugOpen(false);
     setBugSuccess(false);
     setBugError('');
-    setBugForm({ name: '', email: '', description: '', steps: '' });
+    setBugForm({ name: '', email: '', area: '', description: '' });
   };
 
   const handleBugSubmit = async (e: React.FormEvent) => {
@@ -70,7 +71,7 @@ export default function Sidebar() {
         name: bugForm.name,
         email: bugForm.email,
         description: bugForm.description,
-        steps: bugForm.steps || undefined,
+        area: bugForm.area || undefined,
       });
       setBugSuccess(true);
     } catch {
@@ -282,14 +283,24 @@ export default function Sidebar() {
                   className="resize-none text-sm rounded-xl" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="sb-steps" className="text-xs font-semibold text-slate-600">
-                  Steps to Reproduce <span className="text-slate-400 font-normal">(optional)</span>
+                <Label className="text-xs font-semibold text-slate-600">
+                  Affected Area <span className="text-slate-400 font-normal">(optional)</span>
                 </Label>
-                <Textarea id="sb-steps" rows={3}
-                  placeholder={"1. Go to...\n2. Click on...\n3. See error"}
-                  value={bugForm.steps}
-                  onChange={(e) => setBugForm((f) => ({ ...f, steps: e.target.value }))}
-                  className="resize-none text-sm rounded-xl" />
+                <Select value={bugForm.area} onValueChange={(v) => setBugForm((f) => ({ ...f, area: v }))}>
+                  <SelectTrigger className="h-9 text-sm rounded-xl">
+                    <SelectValue placeholder="Where is the issue occurring?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dashboard">Dashboard</SelectItem>
+                    <SelectItem value="Tickets">Tickets</SelectItem>
+                    <SelectItem value="Ticket Detail">Ticket Detail</SelectItem>
+                    <SelectItem value="Users">Users</SelectItem>
+                    <SelectItem value="Teams">Teams</SelectItem>
+                    <SelectItem value="Email Setup">Email Setup</SelectItem>
+                    <SelectItem value="Login / Authentication">Login / Authentication</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <DialogFooter className="pt-1">
                 <Button type="button" variant="outline" onClick={closeBug} className="rounded-full">Cancel</Button>
