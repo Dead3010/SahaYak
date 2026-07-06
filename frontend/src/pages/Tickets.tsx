@@ -316,14 +316,9 @@ export default function Tickets() {
                     i < tickets.length - 1 ? 'border-b border-slate-100' : ''
                   }`}
                 >
-                  {/* Status dot */}
+                  {/* Priority */}
                   <td className="pl-5 py-4 w-10">
-                    <div className={`w-2 h-2 rounded-full ${
-                      ticket.status === 'NEW' ? 'bg-blue-400' :
-                      ticket.status === 'PROCESSING' ? 'bg-amber-400' :
-                      ticket.status === 'OPEN' ? 'bg-rose-400' :
-                      ticket.status === 'RESOLVED' ? 'bg-emerald-400' : 'bg-slate-300'
-                    }`} />
+                    <PriorityBadge priority={ticket.priority} compact />
                   </td>
 
                   {/* Ticket info */}
@@ -373,7 +368,6 @@ export default function Tickets() {
                   {/* Badges */}
                   <td className="py-4 px-3 pr-5 w-52">
                     <div className="flex items-center gap-2">
-                      <PriorityBadge priority={ticket.priority} compact />
                       <CategoryBadge category={ticket.category} />
                       <StatusBadge status={ticket.status} />
                     </div>

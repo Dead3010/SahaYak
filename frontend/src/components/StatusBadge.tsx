@@ -49,7 +49,7 @@ export function PriorityBadge({ priority, compact = false }: { priority: TicketP
   };
   if (compact) {
     return (
-      <span className="text-base leading-none" title={labels[priority]}>
+      <span className="text-xs leading-none" title={labels[priority]}>
         {icons[priority]}
       </span>
     );
