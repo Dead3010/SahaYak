@@ -373,11 +373,6 @@ export default function Tickets() {
                 <PriorityBadge priority={ticket.priority} compact />
                 <CategoryBadge category={ticket.category} />
                 <StatusBadge status={ticket.status} />
-                {ticket._count && (
-                  <span className="text-xs text-slate-400 w-16 text-right">
-                    {ticket._count.replies} {ticket._count.replies === 1 ? 'reply' : 'replies'}
-                  </span>
-                )}
               </div>
             </Link>
           ))}
