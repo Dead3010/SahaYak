@@ -3,9 +3,13 @@ import { TicketCategory, TicketPriority } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-2.0-flash';
 
 const getClient = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+const safeText = (result: { response: { text: () => string } }): string => {
+  try { return safeText(result); } catch { return ''; }
+};
 
 export function parseGeminiError(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err);
@@ -32,7 +36,7 @@ Body: ${body}
 Respond with ONLY the category name, nothing else.`
   );
 
-  const text = result.response.text().trim().toUpperCase();
+  const text = safeText(result).toUpperCase();
 
   if (text.includes('REFUND')) return 'REFUND_REQUEST';
   if (text.includes('TECHNICAL')) return 'TECHNICAL_QUESTION';
@@ -61,7 +65,7 @@ Body: ${body}
 Respond with ONLY the priority level, nothing else.`
   );
 
-  const text = result.response.text().trim().toUpperCase();
+  const text = safeText(result).toUpperCase();
   if (text.includes('URGENT')) return 'URGENT';
   if (text.includes('HIGH')) return 'HIGH';
   if (text.includes('LOW')) return 'LOW';
@@ -79,7 +83,7 @@ Body: ${body}
 Write only the summary, no preamble.`
   );
 
-  return result.response.text().trim();
+  return safeText(result);
 }
 
 export type AutoResolveResult =
@@ -115,7 +119,7 @@ or
 {"decision":"UNRESOLVED"}`
   );
 
-  let text = result.response.text().trim();
+  let text = safeText(result);
   text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
 
   try {
@@ -157,5 +161,5 @@ ${kbContext}
 Write only the reply email body (no subject line, no "From/To" headers). Start with a greeting.`
   );
 
-  return result.response.text().trim();
+  return safeText(result);
 }
