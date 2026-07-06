@@ -8,6 +8,7 @@ import {
   classifyTicketHandler,
   summarizeTicketHandler,
   suggestReplyHandler,
+  prioritizeTicketHandler,
   addReply,
   addComment,
   getDashboardStats,
@@ -27,6 +28,7 @@ router.delete('/:id', deleteTicket);
 router.post('/:id/classify', classifyTicketHandler);
 router.post('/:id/summarize', summarizeTicketHandler);
 router.post('/:id/suggest-reply', suggestReplyHandler);
+router.post('/:id/prioritize', prioritizeTicketHandler);
 router.post('/:id/replies', addReply);
 router.post('/:id/comments', addComment);
 

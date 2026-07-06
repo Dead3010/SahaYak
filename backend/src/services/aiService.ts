@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { TicketCategory } from '@prisma/client';
+import { TicketCategory, TicketPriority } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -37,6 +37,35 @@ Respond with ONLY the category name, nothing else.`
   if (text.includes('REFUND')) return 'REFUND_REQUEST';
   if (text.includes('TECHNICAL')) return 'TECHNICAL_QUESTION';
   return 'GENERAL_QUESTION';
+}
+
+export async function scorePriority(
+  subject: string,
+  body: string,
+  category: TicketCategory
+): Promise<TicketPriority> {
+  const model = getClient().getGenerativeModel({ model: MODEL });
+  const result = await model.generateContent(
+    `You are a support triage system. Score the priority of this ticket as exactly one of: LOW, MEDIUM, HIGH, URGENT.
+
+Guidelines:
+- URGENT: legal threats, security breach, chargeback dispute, complete inability to access the product, or extreme frustration
+- HIGH: billing errors (double charge, wrong amount), refund requests, account locked, business-critical issue
+- MEDIUM: general technical issues, feature questions, moderate frustration
+- LOW: general inquiries, how-to questions, calm tone, no time pressure
+
+Category context: ${category.replace(/_/g, ' ')}
+Subject: ${subject}
+Body: ${body}
+
+Respond with ONLY the priority level, nothing else.`
+  );
+
+  const text = result.response.text().trim().toUpperCase();
+  if (text.includes('URGENT')) return 'URGENT';
+  if (text.includes('HIGH')) return 'HIGH';
+  if (text.includes('LOW')) return 'LOW';
+  return 'MEDIUM';
 }
 
 export async function summarizeTicket(subject: string, body: string): Promise<string> {

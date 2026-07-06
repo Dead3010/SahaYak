@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import { TicketStatus, TicketCategory } from '@prisma/client';
+import { TicketStatus, TicketCategory, TicketPriority } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
-import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, parseGeminiError } from '../services/aiService';
+import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, parseGeminiError } from '../services/aiService';
 import { sendEmail } from '../services/emailService';
 import { prisma } from '../lib/prisma';
 
@@ -55,6 +55,7 @@ export const listTickets = async (req: AuthRequest, res: Response) => {
   const {
     status,
     category,
+    priority,
     search,
     sortBy = 'createdAt',
     sortOrder = 'desc',
@@ -66,6 +67,7 @@ export const listTickets = async (req: AuthRequest, res: Response) => {
   const where: Record<string, unknown> = {};
   if (status) where.status = status as TicketStatus;
   if (category) where.category = category as TicketCategory;
+  if (priority) where.priority = priority as TicketPriority;
   if (assignedToId) where.assignedToId = assignedToId;
   if (search) {
     where.OR = [
@@ -149,6 +151,10 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
   });
 
   triggerAutoResolve(ticket.id).catch(() => {});
+
+  scorePriority(subject, body, ticket.category)
+    .then((priority) => prisma.ticket.update({ where: { id: ticket.id }, data: { priority } }))
+    .catch(() => {});
 
   res.status(201).json({ ticket });
 };
@@ -289,6 +295,19 @@ export const addComment = async (req: AuthRequest, res: Response) => {
   });
 
   res.status(201).json({ comment });
+};
+
+export const prioritizeTicketHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id as string } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+    const priority = await scorePriority(ticket.subject, ticket.body, ticket.category);
+    const updated = await prisma.ticket.update({ where: { id: ticket.id }, data: { priority } });
+    res.json({ ticket: updated, priority });
+  } catch (err) {
+    res.status(500).json({ error: parseGeminiError(err) });
+  }
 };
 
 export const getDashboardStats = async (_req: AuthRequest, res: Response) => {

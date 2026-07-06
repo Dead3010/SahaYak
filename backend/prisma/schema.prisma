@@ -31,6 +31,13 @@ enum TicketSource {
   MANUAL
 }
 
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model Team {
   id        String         @id @default(cuid())
   name      String
@@ -71,6 +78,7 @@ model Ticket {
   aiClassified   Boolean        @default(false)
   aiResolved     Boolean        @default(false)
   source         TicketSource   @default(MANUAL)
+  priority       TicketPriority @default(MEDIUM)
 
   assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
   assignedToId String?

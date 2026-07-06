@@ -2,6 +2,7 @@ export type Role = 'ADMIN' | 'AGENT';
 export type TicketStatus = 'NEW' | 'PROCESSING' | 'OPEN' | 'RESOLVED' | 'CLOSED';
 export type TicketCategory = 'GENERAL_QUESTION' | 'TECHNICAL_QUESTION' | 'REFUND_REQUEST';
 export type TicketSource = 'EMAIL' | 'MANUAL';
+export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Team {
   id: string;
@@ -43,6 +44,7 @@ export interface Ticket {
   aiClassified: boolean;
   aiResolved: boolean;
   source: TicketSource;
+  priority: TicketPriority;
   assignedTo: { id: string; name: string; email: string } | null;
   teamId: string | null;
   team: { id: string; name: string } | null;

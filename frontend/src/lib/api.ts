@@ -44,6 +44,8 @@ export const api = {
       request<{ ticket: import('../types').Ticket; summary: string }>('POST', `/tickets/${id}/summarize`),
     suggestReply: (id: string) =>
       request<{ ticket: import('../types').Ticket; suggestedReply: string }>('POST', `/tickets/${id}/suggest-reply`),
+    prioritize: (id: string) =>
+      request<{ ticket: import('../types').Ticket; priority: string }>('POST', `/tickets/${id}/prioritize`),
     delete: (id: string) => request<{ message: string }>('DELETE', `/tickets/${id}`),
     addReply: (id: string, body: string, sendEmail: boolean) =>
       request<{ reply: import('../types').Reply }>('POST', `/tickets/${id}/replies`, { body, sendEmail }),

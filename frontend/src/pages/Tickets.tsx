@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
-import { StatusBadge, CategoryBadge } from '../components/StatusBadge';
+import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
 import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export default function Tickets() {
   const [dateTo, setDateTo] = useState('');
   const [activePreset, setActivePreset] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
+  const [priority, setPriority] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -85,6 +86,7 @@ export default function Tickets() {
   if (dateFrom) params.dateFrom = dateFrom;
   if (dateTo) params.dateTo = dateTo;
   if (assignedToId) params.assignedToId = assignedToId;
+  if (priority) params.priority = priority;
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -273,6 +275,18 @@ export default function Tickets() {
             {TICKET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>)}
           </SelectContent>
         </Select>
+        <Select value={priority || 'all'} onValueChange={(v) => { setPriority(v === 'all' ? '' : v); resetPage(); }}>
+          <SelectTrigger className="w-36 rounded-lg border-slate-200">
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="URGENT">🔴 Urgent</SelectItem>
+            <SelectItem value="HIGH">🟠 High</SelectItem>
+            <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
+            <SelectItem value="LOW">⚪ Low</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(v) => { setSort(v); resetPage(); }}>
           <SelectTrigger className="w-44 rounded-lg border-slate-200">
             <SelectValue />
@@ -360,6 +374,7 @@ export default function Tickets() {
                     {ticket.assignedTo.name}
                   </span>
                 )}
+                <PriorityBadge priority={ticket.priority} />
                 <CategoryBadge category={ticket.category} />
                 <StatusBadge status={ticket.status} />
                 {ticket._count && (
