@@ -127,8 +127,9 @@ TICKET SUBJECT: ${subject}
 TICKET BODY: ${body}
 
 Rules:
+- Detect the language of the ticket and respond in the same language.
 - If the ticket matches an escalation rule (legal threats, refund outside 30 days, chargeback dispute, account security), respond with ESCALATE and a short reason.
-- If the knowledge base clearly answers the question, respond with RESOLVE and write a helpful, professional reply to the customer.
+- If the knowledge base clearly answers the question, respond with RESOLVE and write a helpful, professional reply to the customer in the same language as the ticket.
 - If the knowledge base does not contain a relevant answer, respond with UNRESOLVED.
 
 Respond in this exact JSON format (no markdown, no code fences):
@@ -166,6 +167,7 @@ export async function suggestReply(
   const model = getClient().getGenerativeModel({ model: MODEL });
   const result = await model.generateContent(
     `You are a helpful support agent. Write a professional, friendly reply to this support ticket.
+Detect the language of the ticket and respond in the same language.
 Use the knowledge base articles below to provide accurate information.
 Do not invent information not present in the knowledge base.
 Be empathetic, concise, and solution-focused.
