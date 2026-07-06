@@ -21,11 +21,12 @@ router.post('/report-issue', async (req: Request, res: Response) => {
 
   try {
     const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
+    const appTag = process.env.APP_NAME ? `\n\n— Sent from: ${process.env.APP_NAME}` : '';
     await sendEmail({
       to: notifyEmail,
       toName: 'SahaYak AI',
-      subject: `Login Issue Report from ${name}`,
-      body: `You have a new login issue report:\n\nName: ${name}\nEmail: ${email}\n\nIssue:\n${message}`,
+      subject: `Login Issue Report from ${name}${process.env.APP_NAME ? ` [${process.env.APP_NAME}]` : ''}`,
+      body: `You have a new login issue report:\n\nName: ${name}\nEmail: ${email}\n\nIssue:\n${message}${appTag}`,
     });
     res.json({ ok: true });
   } catch (err) {
@@ -43,11 +44,12 @@ router.post('/report-bug', async (req: Request, res: Response) => {
 
   try {
     const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
+    const appTag = process.env.APP_NAME ? `\n\n— Sent from: ${process.env.APP_NAME}` : '';
     await sendEmail({
       to: notifyEmail,
       toName: 'SahaYak AI',
-      subject: `Bug Report from ${name}`,
-      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}${area ? `\nAffected Area: ${area}` : ''}\n\nBug Description:\n${description}`,
+      subject: `Bug Report from ${name}${process.env.APP_NAME ? ` [${process.env.APP_NAME}]` : ''}`,
+      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}${area ? `\nAffected Area: ${area}` : ''}\n\nBug Description:\n${description}${appTag}`,
     });
     res.json({ ok: true });
   } catch (err) {
@@ -65,11 +67,12 @@ router.post('/demo-inquiry', async (req: Request, res: Response) => {
 
   try {
     const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
+    const appTag = process.env.APP_NAME ? `\n\n— Sent from: ${process.env.APP_NAME}` : '';
     await sendEmail({
       to: notifyEmail,
       toName: 'SahaYak AI',
-      subject: `New Demo Inquiry from ${name}`,
-      body: `You have a new demo inquiry:\n\nName: ${name}\nContact: ${contact || '—'}\nEmail: ${email}\nOrganization: ${org || '—'}\nInterested in: ${interest || '—'}`,
+      subject: `New Demo Inquiry from ${name}${process.env.APP_NAME ? ` [${process.env.APP_NAME}]` : ''}`,
+      body: `You have a new demo inquiry:\n\nName: ${name}\nContact: ${contact || '—'}\nEmail: ${email}\nOrganization: ${org || '—'}\nInterested in: ${interest || '—'}${appTag}`,
     });
     res.json({ ok: true });
   } catch (err) {
