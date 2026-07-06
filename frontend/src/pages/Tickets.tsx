@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle } from 'lucide-react';
 import { api } from '../lib/api';
@@ -39,6 +39,7 @@ export default function Tickets() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
 
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
@@ -298,82 +299,91 @@ export default function Tickets() {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
-          <div className="min-w-[900px]">
-          {/* Table header */}
-          <div className="grid grid-cols-[1.5rem_1fr_11rem_auto] items-center gap-4 px-5 py-3 border-b border-slate-100 bg-slate-50/60">
-            <span />
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ticket</span>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Assigned To</span>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Status</span>
-          </div>
+          <table className="w-full min-w-[860px] border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/60">
+                <th className="w-10 pl-5 py-3" />
+                <th className="py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Ticket</th>
+                <th className="w-48 py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Assigned To</th>
+                <th className="w-52 py-3 px-3 pr-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map((ticket, i) => (
+                <tr
+                  key={ticket.id}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  className={`cursor-pointer hover:bg-blue-50/40 transition-colors duration-150 group ${
+                    i < tickets.length - 1 ? 'border-b border-slate-100' : ''
+                  }`}
+                >
+                  {/* Status dot */}
+                  <td className="pl-5 py-4 w-10">
+                    <div className={`w-2 h-2 rounded-full ${
+                      ticket.status === 'NEW' ? 'bg-blue-400' :
+                      ticket.status === 'PROCESSING' ? 'bg-amber-400' :
+                      ticket.status === 'OPEN' ? 'bg-rose-400' :
+                      ticket.status === 'RESOLVED' ? 'bg-emerald-400' : 'bg-slate-300'
+                    }`} />
+                  </td>
 
-          {tickets.map((ticket, i) => (
-            <Link
-              key={ticket.id}
-              to={`/tickets/${ticket.id}`}
-              className={`grid grid-cols-[1.5rem_1fr_11rem_auto] items-center gap-4 px-5 py-4 hover:bg-blue-50/40 transition-colors duration-150 group ${
-                i < tickets.length - 1 ? 'border-b border-slate-100' : ''
-              }`}
-            >
-              {/* Status dot */}
-              <div className={`w-2 h-2 rounded-full ${
-                ticket.status === 'NEW' ? 'bg-blue-400' :
-                ticket.status === 'PROCESSING' ? 'bg-amber-400' :
-                ticket.status === 'OPEN' ? 'bg-rose-400' :
-                ticket.status === 'RESOLVED' ? 'bg-emerald-400' : 'bg-slate-300'
-              }`} />
+                  {/* Ticket info */}
+                  <td className="py-4 px-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors duration-150">
+                        {ticket.subject}
+                      </span>
+                      {ticket.aiResolved && (
+                        <Badge className="text-[10px] px-2 py-0 h-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 font-semibold flex items-center gap-0.5">
+                          <Bot className="w-2.5 h-2.5" /> Auto-resolved
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-slate-400 truncate max-w-xs">
+                        {ticket.fromName} · {ticket.fromEmail}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-xs text-slate-400 shrink-0">
+                        {new Date(ticket.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {ticket.summary && (
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-1 italic">{ticket.summary}</p>
+                    )}
+                  </td>
 
-              {/* Ticket info */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-600 transition-colors duration-150">
-                    {ticket.subject}
-                  </span>
-                  {ticket.aiResolved && (
-                    <Badge className="text-[10px] px-2 py-0 h-4 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 font-semibold flex items-center gap-0.5">
-                      <Bot className="w-2.5 h-2.5" /> Auto-resolved
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-slate-400 truncate">
-                    {ticket.fromName} · {ticket.fromEmail}
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-xs text-slate-400 shrink-0">
-                    {new Date(ticket.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                {ticket.summary && (
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-1 italic">{ticket.summary}</p>
-                )}
-              </div>
+                  {/* Assigned To */}
+                  <td className="py-4 px-3 w-48">
+                    {ticket.assignedTo || ticket.team ? (
+                      <div className="flex flex-col gap-0.5">
+                        {ticket.team && (
+                          <span className="text-xs font-semibold text-slate-700">{ticket.team.name}</span>
+                        )}
+                        {ticket.assignedTo && (
+                          <span className="flex items-center gap-1 text-xs text-slate-400">
+                            <UserCircle className="w-3 h-3 shrink-0" />
+                            {ticket.assignedTo.name}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-300 italic">Unassigned</span>
+                    )}
+                  </td>
 
-              {/* Assigned To */}
-              <div className="min-w-0 flex items-center">
-                {ticket.assignedTo || ticket.team ? (
-                  <span className="flex items-center gap-1.5 text-xs text-slate-600 truncate">
-                    <UserCircle className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                    <span className="truncate">
-                      {ticket.team?.name && ticket.assignedTo
-                        ? `${ticket.team.name} · ${ticket.assignedTo.name}`
-                        : ticket.team?.name ?? ticket.assignedTo?.name}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-300 italic">Unassigned</span>
-                )}
-              </div>
-
-              {/* Badges */}
-              <div className="flex items-center gap-2 shrink-0">
-                <PriorityBadge priority={ticket.priority} compact />
-                <CategoryBadge category={ticket.category} />
-                <StatusBadge status={ticket.status} />
-              </div>
-            </Link>
-          ))}
-          </div>
+                  {/* Badges */}
+                  <td className="py-4 px-3 pr-5 w-52">
+                    <div className="flex items-center gap-2">
+                      <PriorityBadge priority={ticket.priority} compact />
+                      <CategoryBadge category={ticket.category} />
+                      <StatusBadge status={ticket.status} />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
