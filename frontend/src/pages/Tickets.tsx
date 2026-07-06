@@ -14,12 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-const SORT_OPTIONS = [
-  { label: 'Newest first', value: 'createdAt:desc' },
-  { label: 'Oldest first', value: 'createdAt:asc' },
-  { label: 'Recently updated', value: 'updatedAt:desc' },
-];
-
 const PRESETS = [
   { label: 'Today', key: 'today' },
   { label: 'This Week', key: 'week' },
@@ -35,7 +29,6 @@ export default function Tickets() {
   const [status, setStatus] = useState(() => searchParams.get('status') || '');
   const [category, setCategory] = useState('');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('createdAt:desc');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [activePreset, setActivePreset] = useState('');
@@ -78,8 +71,7 @@ export default function Tickets() {
     createMutation.mutate();
   };
 
-  const [sortBy, sortOrder] = sort.split(':');
-  const params: Record<string, string> = { page: String(page), sortBy, sortOrder };
+  const params: Record<string, string> = { page: String(page), sortBy: 'createdAt', sortOrder: 'desc' };
   if (status) params.status = status;
   if (category) params.category = category;
   if (search) params.search = search;
@@ -287,14 +279,6 @@ export default function Tickets() {
             <SelectItem value="LOW">⚪ Low</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={sort} onValueChange={(v) => { setSort(v); resetPage(); }}>
-          <SelectTrigger className="w-44 rounded-lg border-slate-200">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Ticket list */}
@@ -374,7 +358,7 @@ export default function Tickets() {
                     {ticket.assignedTo.name}
                   </span>
                 )}
-                <PriorityBadge priority={ticket.priority} />
+                <PriorityBadge priority={ticket.priority} compact />
                 <CategoryBadge category={ticket.category} />
                 <StatusBadge status={ticket.status} />
                 {ticket._count && (

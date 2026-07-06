@@ -126,7 +126,6 @@ export default function TicketDetail() {
   });
 
   const classifyMutation = useMutation({ mutationFn: () => api.tickets.classify(id!), onSuccess: invalidate });
-  const prioritizeMutation = useMutation({ mutationFn: () => api.tickets.prioritize(id!), onSuccess: invalidate });
   const summarizeMutation = useMutation({ mutationFn: () => api.tickets.summarize(id!), onSuccess: invalidate });
   const suggestReplyMutation = useMutation({
     mutationFn: () => api.tickets.suggestReply(id!),
@@ -150,19 +149,17 @@ export default function TicketDetail() {
 
   const aiLoading =
     classifyMutation.isPending ? 'classify' :
-    prioritizeMutation.isPending ? 'prioritize' :
     summarizeMutation.isPending ? 'summarize' :
     suggestReplyMutation.isPending ? 'suggest-reply' : null;
 
-  const runAI = (action: 'classify' | 'prioritize' | 'summarize' | 'suggest-reply') => {
+  const runAI = (action: 'classify' | 'summarize' | 'suggest-reply') => {
     setError('');
     if (action === 'classify') classifyMutation.mutate();
-    else if (action === 'prioritize') prioritizeMutation.mutate();
     else if (action === 'summarize') summarizeMutation.mutate();
     else suggestReplyMutation.mutate();
   };
 
-  const aiError = (classifyMutation.error ?? prioritizeMutation.error ?? summarizeMutation.error ?? suggestReplyMutation.error)?.message;
+  const aiError = (classifyMutation.error ?? summarizeMutation.error ?? suggestReplyMutation.error)?.message;
 
   if (loading) {
     return (
@@ -347,7 +344,6 @@ export default function TicketDetail() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {[
                   { action: 'classify' as const, label: 'Classify', loadingLabel: 'Classifying…', icon: FileText, style: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100' },
-                  { action: 'prioritize' as const, label: 'Re-score Priority', loadingLabel: 'Scoring…', icon: FileText, style: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' },
                   { action: 'summarize' as const, label: 'Summarize', loadingLabel: 'Summarizing…', icon: FileText, style: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' },
                   { action: 'suggest-reply' as const, label: 'Suggest Reply', loadingLabel: 'Generating…', icon: MessageSquarePlus, style: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
                 ].map(({ action, label, loadingLabel, icon: Icon, style }) => (

@@ -28,25 +28,32 @@ export function StatusBadge({ status }: { status: TicketStatus }) {
   );
 }
 
-export function PriorityBadge({ priority }: { priority: TicketPriority }) {
+export function PriorityBadge({ priority, compact = false }: { priority: TicketPriority; compact?: boolean }) {
   const styles: Record<TicketPriority, React.CSSProperties> = {
     URGENT: { backgroundColor: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5' },
     HIGH:   { backgroundColor: '#ffedd5', color: '#9a3412', borderColor: '#fdba74' },
     MEDIUM: { backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' },
     LOW:    { backgroundColor: '#f1f5f9', color: '#475569', borderColor: '#cbd5e1' },
   };
+  const icons: Record<TicketPriority, string> = {
+    URGENT: '🔴',
+    HIGH:   '🟠',
+    MEDIUM: '🟡',
+    LOW:    '⚪',
+  };
   const labels: Record<TicketPriority, string> = {
-    URGENT: '🔴 Urgent',
-    HIGH:   '🟠 High',
-    MEDIUM: '🟡 Medium',
-    LOW:    '⚪ Low',
+    URGENT: 'Urgent',
+    HIGH:   'High',
+    MEDIUM: 'Medium',
+    LOW:    'Low',
   };
   return (
     <Badge
-      className="text-xs px-3 py-0.5 rounded-full border font-semibold transition-colors duration-300"
-      style={styles[priority]}
+      className="text-xs rounded-full border font-semibold transition-colors duration-300"
+      style={{ ...styles[priority], padding: compact ? '2px 6px' : undefined }}
+      title={labels[priority]}
     >
-      {labels[priority]}
+      {compact ? icons[priority] : `${icons[priority]} ${labels[priority]}`}
     </Badge>
   );
 }
