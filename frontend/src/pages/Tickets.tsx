@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle, 
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
-import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
+import { TICKET_CATEGORIES, formatCategory } from '../lib/constants';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,10 +49,10 @@ export default function Tickets() {
   });
 
   const statConfig = [
-    { label: 'Total', key: 'total' as const, link: '', icon: BarChart3, iconColor: '#d97706', numColor: '#92400e', cardBorder: '#fcd34d', cardBg: '#fffbeb' },
-    { label: 'Open', key: 'open' as const, link: '?status=OPEN', icon: Clock, iconColor: '#db2777', numColor: '#831843', cardBorder: '#f9a8d4', cardBg: '#fdf2f8' },
-    { label: 'Resolved', key: 'resolved' as const, link: '?status=RESOLVED', icon: CheckCircle2, iconColor: '#16a34a', numColor: '#14532d', cardBorder: '#86efac', cardBg: '#f0fdf4' },
-    { label: 'Closed', key: 'closed' as const, link: '?status=CLOSED', icon: XCircle, iconColor: '#4f46e5', numColor: '#3730a3', cardBorder: '#c7d2fe', cardBg: '#eef2ff' },
+    { label: 'Total', key: 'total' as const, statusFilter: '', icon: BarChart3, iconColor: '#d97706', numColor: '#92400e', cardBorder: '#fcd34d', cardBg: '#fffbeb' },
+    { label: 'Open', key: 'open' as const, statusFilter: 'OPEN', icon: Clock, iconColor: '#db2777', numColor: '#831843', cardBorder: '#f9a8d4', cardBg: '#fdf2f8' },
+    { label: 'Resolved', key: 'resolved' as const, statusFilter: 'RESOLVED', icon: CheckCircle2, iconColor: '#16a34a', numColor: '#14532d', cardBorder: '#86efac', cardBg: '#f0fdf4' },
+    { label: 'Closed', key: 'closed' as const, statusFilter: 'CLOSED', icon: XCircle, iconColor: '#4f46e5', numColor: '#3730a3', cardBorder: '#c7d2fe', cardBg: '#eef2ff' },
   ];
 
   const applyPreset = (key: string) => {
@@ -128,12 +128,17 @@ export default function Tickets() {
         {/* Stat cards */}
         {stats && (
           <div className="flex items-center gap-3 flex-1 justify-center flex-wrap">
-            {statConfig.map(({ label, key, link, icon: Icon, iconColor, numColor, cardBorder, cardBg }) => (
+            {statConfig.map(({ label, key, statusFilter, icon: Icon, iconColor, numColor, cardBorder, cardBg }) => (
               <button
                 key={key}
-                onClick={() => { if (link) navigate(`/tickets${link}`); }}
+                onClick={() => { setStatus(statusFilter); resetPage(); }}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-200 hover:-translate-y-0.5"
-                style={{ backgroundColor: cardBg, border: `1.5px solid ${cardBorder}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                style={{
+                  backgroundColor: cardBg,
+                  border: status === statusFilter ? `2px solid ${cardBorder}` : `1.5px solid ${cardBorder}`,
+                  boxShadow: status === statusFilter ? '0 2px 8px rgba(0,0,0,0.10)' : '0 1px 4px rgba(0,0,0,0.06)',
+                  transform: status === statusFilter ? 'translateY(-2px)' : undefined,
+                }}
               >
                 <Icon className="w-4 h-4 shrink-0" style={{ color: iconColor }} />
                 <div className="text-left">
@@ -302,15 +307,6 @@ export default function Tickets() {
           <SelectContent className="rounded-xl">
             <SelectItem value="all">All Categories</SelectItem>
             {TICKET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={status || 'all'} onValueChange={(v) => { setStatus(v === 'all' ? '' : v); resetPage(); }}>
-          <SelectTrigger className="w-36 rounded-lg border-slate-200">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="all">All Statuses</SelectItem>
-            {TICKET_STATUSES.map((s) => <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
