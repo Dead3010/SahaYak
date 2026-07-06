@@ -346,7 +346,7 @@ export default function Tickets() {
                   {/* Assigned To */}
                   <td className="py-4 px-3 w-48">
                     {ticket.aiResolved && !ticket.assignedTo ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#065f46' }}>
                         <Bot className="w-3 h-3" /> AI
                       </span>
                     ) : ticket.assignedTo || ticket.team ? (

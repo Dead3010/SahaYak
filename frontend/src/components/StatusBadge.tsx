@@ -1,40 +1,22 @@
-import { Badge } from '@/components/ui/badge';
 import { TicketStatus, TicketCategory, TicketPriority } from '../types';
-import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/constants';
 
 export function StatusBadge({ status }: { status: TicketStatus }) {
-  const styles: Record<TicketStatus, string> = {
-    NEW:        'border font-semibold',
-    PROCESSING: 'border font-semibold',
-    OPEN:       'border font-semibold',
-    RESOLVED:   'border font-semibold',
-    CLOSED:     'border font-semibold',
-  };
-  const inlineStyles: Record<TicketStatus, React.CSSProperties> = {
-    NEW:        { backgroundColor: '#dbeafe', color: '#1e40af', borderColor: '#bfdbfe' },
-    PROCESSING: { backgroundColor: '#fef3c7', color: '#92400e', borderColor: '#fde68a' },
-    OPEN:       { backgroundColor: '#fce7f3', color: '#9d174d', borderColor: '#fbcfe8' },
-    RESOLVED:   { backgroundColor: '#ccfbf1', color: '#065f46', borderColor: '#99f6e4' },
-    CLOSED:     { backgroundColor: '#e0e7ff', color: '#3730a3', borderColor: '#c7d2fe' },
+  const colors: Record<TicketStatus, string> = {
+    NEW:        '#1e40af',
+    PROCESSING: '#92400e',
+    OPEN:       '#9d174d',
+    RESOLVED:   '#065f46',
+    CLOSED:     '#3730a3',
   };
   return (
-    <Badge
-      className={cn('text-xs px-3 py-0.5 rounded-full transition-colors duration-300', styles[status])}
-      style={inlineStyles[status]}
-    >
+    <span className="text-sm font-semibold" style={{ color: colors[status] }}>
       {formatStatus(status)}
-    </Badge>
+    </span>
   );
 }
 
 export function PriorityBadge({ priority, compact = false }: { priority: TicketPriority; compact?: boolean }) {
-  const styles: Record<TicketPriority, React.CSSProperties> = {
-    URGENT: { backgroundColor: '#fee2e2', color: '#991b1b' },
-    HIGH:   { backgroundColor: '#ffedd5', color: '#9a3412' },
-    MEDIUM: { backgroundColor: '#fef9c3', color: '#854d0e' },
-    LOW:    { backgroundColor: '#f1f5f9', color: '#475569' },
-  };
   const icons: Record<TicketPriority, string> = {
     URGENT: '🔴',
     HIGH:   '🟠',
@@ -47,6 +29,13 @@ export function PriorityBadge({ priority, compact = false }: { priority: TicketP
     MEDIUM: 'Medium',
     LOW:    'Low',
   };
+  const colors: Record<TicketPriority, string> = {
+    URGENT: '#991b1b',
+    HIGH:   '#9a3412',
+    MEDIUM: '#854d0e',
+    LOW:    '#475569',
+  };
+
   if (compact) {
     return (
       <span className="text-xs leading-none" title={labels[priority]}>
@@ -56,21 +45,17 @@ export function PriorityBadge({ priority, compact = false }: { priority: TicketP
   }
 
   return (
-    <Badge
-      className="text-xs rounded-full font-semibold transition-colors duration-300"
-      style={styles[priority]}
-      title={labels[priority]}
-    >
+    <span className="text-sm font-semibold" style={{ color: colors[priority] }} title={labels[priority]}>
       {`${icons[priority]} ${labels[priority]}`}
-    </Badge>
+    </span>
   );
 }
 
 export function CategoryBadge({ category }: { category: TicketCategory }) {
-  const inlineStyles: Record<TicketCategory, React.CSSProperties> = {
-    GENERAL_QUESTION:   { backgroundColor: '#dbeafe', color: '#1e40af', borderColor: '#bfdbfe' },
-    TECHNICAL_QUESTION: { backgroundColor: '#ede9fe', color: '#5b21b6', borderColor: '#ddd6fe' },
-    REFUND_REQUEST:     { backgroundColor: '#fce7f3', color: '#9d174d', borderColor: '#fbcfe8' },
+  const colors: Record<TicketCategory, string> = {
+    GENERAL_QUESTION:   '#1e40af',
+    TECHNICAL_QUESTION: '#5b21b6',
+    REFUND_REQUEST:     '#9d174d',
   };
   const labels: Record<TicketCategory, string> = {
     GENERAL_QUESTION:   'General',
@@ -78,11 +63,8 @@ export function CategoryBadge({ category }: { category: TicketCategory }) {
     REFUND_REQUEST:     'Refund',
   };
   return (
-    <Badge
-      className="text-xs px-3 py-0.5 rounded-full border font-semibold transition-colors duration-300"
-      style={inlineStyles[category]}
-    >
+    <span className="text-sm font-semibold" style={{ color: colors[category] }}>
       {labels[category]}
-    </Badge>
+    </span>
   );
 }
