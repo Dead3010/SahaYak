@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock } from 'lucide-react';
+import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { StatusBadge, CategoryBadge } from '../components/StatusBadge';
 import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
@@ -24,6 +24,12 @@ export default function TicketDetail() {
   const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '' });
   const [showUpdate, setShowUpdate] = useState(false);
 
+  const [isListening, setIsListening] = useState(false);
+  const [interimText, setInterimText] = useState('');
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const isListeningRef = useRef(false);
+
   const { data, isLoading: loading, isError, error: queryError } = useQuery({
     queryKey: ['ticket', id],
     queryFn: () => api.tickets.get(id!),
@@ -43,6 +49,72 @@ export default function TicketDetail() {
       setUpdateForm({ status: ticket.status, category: ticket.category, assignedToId: ticket.assignedTo?.id ?? '' });
     }
   }, [ticket]);
+
+  useEffect(() => {
+    setSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  }, []);
+
+  const startListening = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          final += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      if (final) {
+        setReplyBody((prev) => {
+          const separator = prev && !prev.endsWith(' ') ? ' ' : '';
+          return prev + separator + final.trim() + ' ';
+        });
+        setInterimText('');
+      } else {
+        setInterimText(interim);
+      }
+    };
+
+    recognition.onend = () => {
+      setInterimText('');
+      // Auto-restart so silence doesn't cut off longer replies
+      if (isListeningRef.current) {
+        recognition.start();
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed') {
+        isListeningRef.current = false;
+        setIsListening(false);
+        setInterimText('');
+      }
+    };
+
+    recognitionRef.current = recognition;
+    isListeningRef.current = true;
+    setIsListening(true);
+    recognition.start();
+  };
+
+  const stopListening = () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setInterimText('');
+    recognitionRef.current?.stop();
+  };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ticket', id] });
 
@@ -352,8 +424,15 @@ export default function TicketDetail() {
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
               placeholder="Type your reply here…"
-              className="resize-none bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-400 transition-all duration-150 rounded-xl"
+              className={`resize-none bg-slate-50 border-slate-200 focus:bg-white transition-all duration-150 rounded-xl ${
+                isListening ? 'border-red-300 focus:border-red-400 ring-2 ring-red-100' : 'focus:border-blue-400'
+              }`}
             />
+            {interimText && (
+              <p className="mt-1.5 px-3 text-xs text-slate-400 italic animate-pulse">
+                {interimText}…
+              </p>
+            )}
             <div className="flex items-center justify-between mt-3">
               <label className="flex items-center gap-2 text-sm text-slate-500 cursor-pointer select-none hover:text-slate-700 transition-colors duration-150">
                 <input
@@ -365,14 +444,41 @@ export default function TicketDetail() {
                 <Mail className="w-3.5 h-3.5" />
                 Send via email to customer
               </label>
-              <Button
-                onClick={() => replyMutation.mutate({ body: replyBody, sendEmail })}
-                disabled={replyMutation.isPending || !replyBody.trim()}
-                size="sm"
-                className="rounded-full font-semibold px-5 transition-all duration-150"
-              >
-                {replyMutation.isPending ? 'Sending…' : sendEmail ? 'Send Reply' : 'Save Reply'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    title={isListening ? 'Stop recording' : 'Speak your reply'}
+                    className={`relative flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 ${
+                      isListening
+                        ? 'bg-red-500 text-white border-red-500 shadow-sm shadow-red-200'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-red-300 hover:text-red-500 hover:bg-red-50'
+                    }`}
+                  >
+                    {isListening ? (
+                      <>
+                        <span className="absolute inset-0 rounded-full bg-red-400 opacity-30 animate-ping" />
+                        <MicOff className="w-3.5 h-3.5 relative" />
+                        <span className="relative">Stop</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-3.5 h-3.5" />
+                        Speak
+                      </>
+                    )}
+                  </button>
+                )}
+                <Button
+                  onClick={() => replyMutation.mutate({ body: replyBody, sendEmail })}
+                  disabled={replyMutation.isPending || !replyBody.trim()}
+                  size="sm"
+                  className="rounded-full font-semibold px-5 transition-all duration-150"
+                >
+                  {replyMutation.isPending ? 'Sending…' : sendEmail ? 'Send Reply' : 'Save Reply'}
+                </Button>
+              </div>
             </div>
           </div>
 
