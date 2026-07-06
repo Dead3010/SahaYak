@@ -249,13 +249,16 @@ export default function Tickets() {
             </SelectContent>
           </Select>
         </div>
-        <Select value={status || 'all'} onValueChange={(v) => { setStatus(v === 'all' ? '' : v); resetPage(); }}>
+        <Select value={priority || 'all'} onValueChange={(v) => { setPriority(v === 'all' ? '' : v); resetPage(); }}>
           <SelectTrigger className="w-36 rounded-lg border-slate-200">
-            <SelectValue placeholder="All Statuses" />
+            <SelectValue placeholder="All Priorities" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="all">All Statuses</SelectItem>
-            {TICKET_STATUSES.map((s) => <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>)}
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="URGENT">🔴 Urgent</SelectItem>
+            <SelectItem value="HIGH">🟠 High</SelectItem>
+            <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
+            <SelectItem value="LOW">⚪ Low</SelectItem>
           </SelectContent>
         </Select>
         <Select value={category || 'all'} onValueChange={(v) => { setCategory(v === 'all' ? '' : v); resetPage(); }}>
@@ -267,16 +270,13 @@ export default function Tickets() {
             {TICKET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={priority || 'all'} onValueChange={(v) => { setPriority(v === 'all' ? '' : v); resetPage(); }}>
+        <Select value={status || 'all'} onValueChange={(v) => { setStatus(v === 'all' ? '' : v); resetPage(); }}>
           <SelectTrigger className="w-36 rounded-lg border-slate-200">
-            <SelectValue placeholder="All Priorities" />
+            <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="URGENT">🔴 Urgent</SelectItem>
-            <SelectItem value="HIGH">🟠 High</SelectItem>
-            <SelectItem value="MEDIUM">🟡 Medium</SelectItem>
-            <SelectItem value="LOW">⚪ Low</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {TICKET_STATUSES.map((s) => <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
