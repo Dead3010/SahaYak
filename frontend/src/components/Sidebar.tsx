@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,15 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  const { data: newTickets } = useQuery({
+    queryKey: ['tickets-new-notif'],
+    queryFn: () => api.tickets.list({ status: 'NEW', limit: '8', sortBy: 'createdAt', sortOrder: 'desc' }),
+    refetchInterval: 30000,
+  });
+  const newCount = newTickets?.total ?? 0;
   const [contactOpen, setContactOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
   const [bugForm, setBugForm] = useState({ name: '', email: '', area: '', description: '' });
@@ -42,9 +52,8 @@ export default function Sidebar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) setBellOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -99,6 +108,52 @@ export default function Sidebar() {
             <Headphones className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-base" style={{ color: '#0f172a', letterSpacing: '-0.01em' }}>SahaYak AI</span>
+        </div>
+
+        {/* Notification Bell */}
+        <div className="relative" ref={bellRef}>
+          <button
+            onClick={() => setBellOpen((o) => !o)}
+            className="relative w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-150"
+            style={{ backgroundColor: bellOpen ? '#e0eaff' : '#eff6ff', border: '1px solid #bfdbfe' }}
+          >
+            <Bell className="w-4 h-4" style={{ color: '#1e3a8a' }} />
+            {newCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: '#ef4444' }}>
+                {newCount > 9 ? '9+' : newCount}
+              </span>
+            )}
+          </button>
+
+          {bellOpen && (
+            <div
+              className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden"
+              style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 60 }}
+            >
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-800">New Tickets</span>
+                {newCount > 0 && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>{newCount} new</span>
+                )}
+              </div>
+              {newTickets?.tickets && newTickets.tickets.length > 0 ? (
+                <div className="max-h-72 overflow-y-auto">
+                  {newTickets.tickets.map((ticket) => (
+                    <button
+                      key={ticket.id}
+                      onClick={() => { setBellOpen(false); navigate(`/tickets/${ticket.id}`); }}
+                      className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-blue-50/40 transition-colors duration-150"
+                    >
+                      <p className="text-sm font-semibold text-slate-800 truncate">{ticket.subject}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{ticket.fromName} · {new Date(ticket.createdAt).toLocaleDateString()}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center text-sm text-slate-400">No new tickets 🎉</div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* User pill + dropdown */}
