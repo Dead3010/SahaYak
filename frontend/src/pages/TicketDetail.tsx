@@ -243,7 +243,7 @@ export default function TicketDetail() {
                   ) : (
                     <button onClick={() => setShowUpdate(true)}
                       className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all duration-150">
-                      <Pencil className="w-3 h-3" /> Edit
+                      <Pencil className="w-3 h-3" /> Update
                     </button>
                   )}
                 </div>
@@ -274,60 +274,6 @@ export default function TicketDetail() {
               {ticket.body}
             </div>
 
-            {/* Edit form */}
-            {showUpdate && (
-              <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4 animate-fade-in">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-xs font-bold text-blue-700">Edit Details</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-1">Status</p>
-                    <Select value={updateForm.status} onValueChange={(v) => setUpdateForm((f) => ({ ...f, status: v }))}>
-                      <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {TICKET_STATUSES.map((s) => <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-1">Category</p>
-                    <Select value={updateForm.category} onValueChange={(v) => setUpdateForm((f) => ({ ...f, category: v }))}>
-                      <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {TICKET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 mb-1">Assigned to</p>
-                    <Select
-                      value={updateForm.assignedToId || 'unassigned'}
-                      onValueChange={(v) => setUpdateForm((f) => ({ ...f, assignedToId: v === 'unassigned' ? '' : v }))}
-                    >
-                      <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {(usersData?.users ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <Button size="sm" className="rounded-full font-semibold px-5 transition-all duration-150"
-                    onClick={() => updateMutation.mutate({
-                      status: updateForm.status,
-                      category: updateForm.category,
-                      assignedToId: updateForm.assignedToId || null,
-                    })}
-                    disabled={updateMutation.isPending}
-                  >
-                    {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* AI Tools */}
@@ -488,6 +434,61 @@ export default function TicketDetail() {
 
         {/* RIGHT column — Comments sidebar */}
         <div className="lg:sticky lg:top-6 space-y-3">
+
+          {/* Update form */}
+          {showUpdate && (
+            <div className="bg-white rounded-2xl border border-blue-100 shadow-sm p-4 animate-fade-in">
+              <div className="flex items-center gap-1.5 mb-3">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500" />
+                <span className="text-xs font-bold text-blue-700">Update Details</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-1">Status</p>
+                  <Select value={updateForm.status} onValueChange={(v) => setUpdateForm((f) => ({ ...f, status: v }))}>
+                    <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {TICKET_STATUSES.map((s) => <SelectItem key={s} value={s}>{formatStatus(s)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-1">Category</p>
+                  <Select value={updateForm.category} onValueChange={(v) => setUpdateForm((f) => ({ ...f, category: v }))}>
+                    <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {TICKET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-1">Assigned to</p>
+                  <Select
+                    value={updateForm.assignedToId || 'unassigned'}
+                    onValueChange={(v) => setUpdateForm((f) => ({ ...f, assignedToId: v === 'unassigned' ? '' : v }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {(usersData?.users ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button size="sm" className="rounded-full font-semibold px-5 transition-all duration-150"
+                  onClick={() => updateMutation.mutate({
+                    status: updateForm.status,
+                    category: updateForm.category,
+                    assignedToId: updateForm.assignedToId || null,
+                  })}
+                  disabled={updateMutation.isPending}
+                >
+                  {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Add comment card */}
           <div className="bg-white rounded-2xl border border-amber-100 shadow-sm p-4">
