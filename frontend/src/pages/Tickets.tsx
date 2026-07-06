@@ -304,7 +304,8 @@ export default function Tickets() {
                 <th className="w-10 pl-5 py-3" />
                 <th className="py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Ticket</th>
                 <th className="w-48 py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Assigned To</th>
-                <th className="w-52 py-3 px-3 pr-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Status</th>
+                <th className="w-32 py-3 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Category</th>
+                <th className="w-36 py-3 px-3 pr-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-left">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -365,12 +366,14 @@ export default function Tickets() {
                     )}
                   </td>
 
-                  {/* Badges */}
-                  <td className="py-4 px-3 pr-5 w-52">
-                    <div className="flex items-center gap-2">
-                      <CategoryBadge category={ticket.category} />
-                      <StatusBadge status={ticket.status} />
-                    </div>
+                  {/* Category */}
+                  <td className="py-4 px-3 w-32">
+                    <CategoryBadge category={ticket.category} />
+                  </td>
+
+                  {/* Status */}
+                  <td className="py-4 px-3 pr-5 w-36">
+                    <StatusBadge status={ticket.status} />
                   </td>
                 </tr>
               ))}
