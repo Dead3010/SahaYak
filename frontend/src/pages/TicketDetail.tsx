@@ -23,6 +23,7 @@ export default function TicketDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '', priority: '' });
   const [showUpdate, setShowUpdate] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
@@ -147,6 +148,11 @@ export default function TicketDetail() {
     onError: (e) => setCommentError(e instanceof Error ? e.message : 'Failed to save comment'),
   });
 
+  const detectLanguageMutation = useMutation({
+    mutationFn: () => api.tickets.detectLanguage(id!),
+    onSuccess: () => invalidate(),
+  });
+
   const aiLoading =
     classifyMutation.isPending ? 'classify' :
     summarizeMutation.isPending ? 'summarize' :
@@ -263,6 +269,11 @@ export default function TicketDetail() {
                     <Bot className="w-3 h-3" /> Auto-resolved
                   </Badge>
                 )}
+                {ticket.detectedLanguage && ticket.detectedLanguage !== 'en' && (
+                  <Badge className="text-[10px] h-5 px-2 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+                    🌐 {ticket.detectedLanguageName}
+                  </Badge>
+                )}
                 <PriorityBadge priority={ticket.priority} />
                 <CategoryBadge category={ticket.category} />
                 <StatusBadge status={ticket.status} />
@@ -270,8 +281,44 @@ export default function TicketDetail() {
             </div>
 
             {/* Body */}
-            <div className="mt-5 bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-              {ticket.body}
+            {ticket.detectedLanguage && ticket.detectedLanguage !== 'en' && (
+              <div className="mt-5 flex items-center gap-2">
+                {ticket.translatedBody ? (
+                  <>
+                    <button
+                      onClick={() => setShowTranslation(false)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 ${
+                        !showTranslation
+                          ? 'bg-slate-700 text-white border-slate-700'
+                          : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700'
+                      }`}
+                    >
+                      View Original
+                    </button>
+                    <button
+                      onClick={() => setShowTranslation(true)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all duration-150 ${
+                        showTranslation
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'bg-white text-amber-600 border-amber-200 hover:border-amber-300 hover:bg-amber-50'
+                      }`}
+                    >
+                      🌐 View in English
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => detectLanguageMutation.mutate()}
+                    disabled={detectLanguageMutation.isPending}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full border bg-white text-amber-600 border-amber-200 hover:border-amber-300 hover:bg-amber-50 transition-all duration-150 disabled:opacity-50"
+                  >
+                    {detectLanguageMutation.isPending ? 'Translating…' : '🌐 Translate to English'}
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl px-5 py-4 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+              {showTranslation && ticket.translatedBody ? ticket.translatedBody : ticket.body}
             </div>
 
           </div>

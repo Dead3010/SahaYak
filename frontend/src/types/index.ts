@@ -45,6 +45,10 @@ export interface Ticket {
   aiResolved: boolean;
   source: TicketSource;
   priority: TicketPriority;
+  detectedLanguage: string | null;
+  detectedLanguageName: string | null;
+  translatedSubject: string | null;
+  translatedBody: string | null;
   assignedTo: { id: string; name: string; email: string } | null;
   teamId: string | null;
   team: { id: string; name: string } | null;

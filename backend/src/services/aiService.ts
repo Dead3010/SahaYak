@@ -153,6 +153,46 @@ or
   }
 }
 
+export interface LanguageDetectionResult {
+  language: string;
+  languageName: string;
+  translatedSubject?: string;
+  translatedBody?: string;
+}
+
+export async function detectAndTranslate(
+  subject: string,
+  body: string
+): Promise<LanguageDetectionResult> {
+  const model = getClient().getGenerativeModel({ model: MODEL });
+
+  const result = await withRetry(() =>
+    model.generateContent(
+      `Detect the language of this support ticket. If it is NOT English, translate the subject and body to English.
+
+Subject: ${subject}
+Body: ${body}
+
+Respond in this exact JSON format (no markdown, no code fences):
+If already English:
+{"language":"en","languageName":"English"}
+
+If non-English:
+{"language":"<ISO 639-1 code>","languageName":"<English name of language>","translatedSubject":"<English translation>","translatedBody":"<English translation>"}`
+    )
+  );
+
+  let text = safeText(result);
+  text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.language && parsed.languageName) return parsed as LanguageDetectionResult;
+  } catch { /* fall through */ }
+
+  return { language: 'en', languageName: 'English' };
+}
+
 export async function suggestReply(
   subject: string,
   body: string,

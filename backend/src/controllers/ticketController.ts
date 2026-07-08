@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { TicketStatus, TicketCategory, TicketPriority } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
-import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, parseGeminiError } from '../services/aiService';
+import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, detectAndTranslate, parseGeminiError } from '../services/aiService';
 import { sendEmail } from '../services/emailService';
 import { prisma } from '../lib/prisma';
 
@@ -156,6 +156,18 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
     .then((priority) => prisma.ticket.update({ where: { id: ticket.id }, data: { priority } }))
     .catch(() => {});
 
+  detectAndTranslate(subject, body)
+    .then((r) => prisma.ticket.update({
+      where: { id: ticket.id },
+      data: {
+        detectedLanguage: r.language,
+        detectedLanguageName: r.languageName,
+        ...(r.translatedSubject ? { translatedSubject: r.translatedSubject } : {}),
+        ...(r.translatedBody ? { translatedBody: r.translatedBody } : {}),
+      },
+    }))
+    .catch(() => {});
+
   res.status(201).json({ ticket });
 };
 
@@ -296,6 +308,32 @@ export const addComment = async (req: AuthRequest, res: Response) => {
   });
 
   res.status(201).json({ comment });
+};
+
+export const detectLanguageHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id as string } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+
+    const r = await detectAndTranslate(ticket.subject, ticket.body);
+    const updated = await prisma.ticket.update({
+      where: { id: ticket.id },
+      data: {
+        detectedLanguage: r.language,
+        detectedLanguageName: r.languageName,
+        ...(r.translatedSubject ? { translatedSubject: r.translatedSubject } : {}),
+        ...(r.translatedBody ? { translatedBody: r.translatedBody } : {}),
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, email: true } },
+        team: { select: { id: true, name: true } },
+        replies: { orderBy: { createdAt: 'asc' }, include: { author: { select: { id: true, name: true } } } },
+      },
+    });
+    res.json({ ticket: updated });
+  } catch (err) {
+    res.status(500).json({ error: parseGeminiError(err) });
+  }
 };
 
 export const prioritizeTicketHandler = async (req: AuthRequest, res: Response) => {

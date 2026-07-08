@@ -80,6 +80,11 @@ model Ticket {
   source         TicketSource   @default(MANUAL)
   priority       TicketPriority @default(MEDIUM)
 
+  detectedLanguage     String?
+  detectedLanguageName String?
+  translatedSubject    String?
+  translatedBody       String?
+
   assignedTo   User?   @relation("AssignedTo", fields: [assignedToId], references: [id])
   assignedToId String?
 

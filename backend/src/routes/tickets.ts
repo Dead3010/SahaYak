@@ -9,6 +9,7 @@ import {
   summarizeTicketHandler,
   suggestReplyHandler,
   prioritizeTicketHandler,
+  detectLanguageHandler,
   addReply,
   addComment,
   getDashboardStats,
@@ -29,6 +30,7 @@ router.post('/:id/classify', classifyTicketHandler);
 router.post('/:id/summarize', summarizeTicketHandler);
 router.post('/:id/suggest-reply', suggestReplyHandler);
 router.post('/:id/prioritize', prioritizeTicketHandler);
+router.post('/:id/detect-language', detectLanguageHandler);
 router.post('/:id/replies', addReply);
 router.post('/:id/comments', addComment);
 
