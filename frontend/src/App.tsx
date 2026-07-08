@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContext, useAuthProvider, useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
@@ -37,6 +38,7 @@ export default function App() {
   const auth = useAuthProvider();
 
   return (
+    <Sentry.ErrorBoundary fallback={<div className="min-h-screen flex items-center justify-center text-sm text-slate-500">Something went wrong. Our team has been notified.</div>}>
     <AuthContext.Provider value={auth}>
       <BrowserRouter>
         <Routes>
@@ -81,5 +83,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthContext.Provider>
+    </Sentry.ErrorBoundary>
   );
 }
