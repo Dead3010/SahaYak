@@ -25,6 +25,14 @@ Sentry.init({
   tracesSampleRate: 1.0,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
+  beforeSend(event) {
+    fetch('/api/webhooks/sentry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { event } }),
+    }).catch(() => {});
+    return event;
+  },
 });
 
 const queryClient = new QueryClient();
