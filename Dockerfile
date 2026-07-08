@@ -4,6 +4,8 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install --fetch-retries=5 --fetch-retry-mintimeout=20000
 COPY frontend/ ./
+ARG VITE_SENTRY_DSN
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 RUN npm run build
 
 # ── Stage 2: Build backend ────────────────────────────────────────────────────
