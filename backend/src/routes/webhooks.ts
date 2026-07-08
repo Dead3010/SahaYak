@@ -52,10 +52,10 @@ router.post('/sentry', async (req: Request, res: Response) => {
   res.json({ ok: true });
 
   try {
-    const { action, data } = req.body;
-    if (action !== 'created' || !data?.event) return;
-
-    const event = data.event;
+    // Legacy webhook: event is at req.body.event
+    // Internal integration webhook: event is at req.body.data.event
+    const event = req.body?.data?.event ?? req.body?.event ?? req.body;
+    if (!event) return;
     const title: string = event.title || event.message || 'Unknown Error';
     const breadcrumbs: SentryBreadcrumb[] = event.breadcrumbs?.values ?? [];
     const userEmail: string = event.user?.email || event.user?.id || 'sentry@auto.report';
