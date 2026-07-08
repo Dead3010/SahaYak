@@ -56,15 +56,30 @@ router.post('/sentry', async (req: Request, res: Response) => {
     // Internal integration webhook: event is at req.body.data.event
     const event = req.body?.data?.event ?? req.body?.event ?? req.body;
     if (!event) return;
-    const title: string = event.title || event.message || 'Unknown Error';
-    const breadcrumbs: SentryBreadcrumb[] = event.breadcrumbs?.values ?? [];
+
+    // Title: check exception values first (beforeSend format), then fallback
+    const exceptionValue = event.exception?.values?.[0];
+    const title: string =
+      event.title ||
+      (exceptionValue ? `${exceptionValue.type}: ${exceptionValue.value}` : '') ||
+      event.message ||
+      'Unknown Error';
+
+    // Breadcrumbs: can be array (beforeSend) or { values: [] } (webhook)
+    const rawBreadcrumbs = Array.isArray(event.breadcrumbs)
+      ? event.breadcrumbs
+      : (event.breadcrumbs?.values ?? []);
+    const breadcrumbs: SentryBreadcrumb[] = rawBreadcrumbs;
+
     const userEmail: string = event.user?.email || event.user?.id || 'sentry@auto.report';
     const userName: string = event.user?.name || event.user?.email || 'Sentry Auto-Report';
     const pageUrl: string = event.request?.url || '';
     const environment: string = event.environment || 'unknown';
-    const sentryUrl: string = event.url || '';
+    const eventId: string = event.event_id || '';
+    const sentryUrl: string = event.url ||
+      (eventId ? `https://enjay.sentry.io/issues/?query=${eventId}` : '');
     const timestamp: string = event.timestamp
-      ? new Date(event.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      ? new Date(Number(event.timestamp) * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     // Extract browser / OS from tags array: [["browser", "Chrome 120"], ...]
