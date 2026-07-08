@@ -104,7 +104,10 @@ export default function Tickets() {
     queryFn: () => api.tickets.list(params),
   });
 
-  const tickets: Ticket[] = data?.tickets ?? [];
+  const allTickets: Ticket[] = data?.tickets ?? [];
+  const tickets = search
+    ? allTickets.filter(t => new RegExp(search, 'i').test(`${t.subject} ${t.fromName} ${t.fromEmail}`))
+    : allTickets;
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 1;
   const resetPage = () => setPage(1);
