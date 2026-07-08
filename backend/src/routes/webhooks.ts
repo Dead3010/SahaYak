@@ -20,25 +20,53 @@ interface SentryBreadcrumb {
   };
 }
 
+function cleanClickLabel(msg: string): string | null {
+  // Short readable message with no CSS classes — use as-is
+  if (msg.length < 50 && !msg.includes('.') && !msg.match(/^[0-9a-f]{20,}$/i)) return msg;
+  // Extract element tag + type from Tailwind CSS selector string
+  const match = msg.match(/^(\w+)[^[]*(?:\[type="([^"]+)"\])?/);
+  if (!match) return null;
+  const tag = match[1];
+  const type = match[2];
+  if (tag === 'button' && type === 'submit') return 'Submit button';
+  if (tag === 'button') return 'Button';
+  if (tag === 'input' && type === 'password') return 'Password field';
+  if (tag === 'input' && type === 'email') return 'Email field';
+  if (tag === 'input') return 'Input field';
+  if (tag === 'a') return 'Link';
+  if (tag === 'span' || tag === 'div' || tag === 'p') return null;
+  return tag;
+}
+
 function formatBreadcrumbs(values: SentryBreadcrumb[]): string {
+  let n = 0;
   return values
-    .filter((b) => b.type !== 'default' || b.message)
-    .map((b, i) => {
-      const n = i + 1;
+    .map((b) => {
+      // Skip hash-looking default breadcrumbs
+      if (b.message?.match(/^[0-9a-f]{20,}$/i)) return null;
+
       if (b.type === 'navigation' && b.data?.from && b.data?.to) {
-        return `${n}. 🔀 Navigated: ${b.data.from} → ${b.data.to}`;
+        n++;
+        return `${n}. 🔀 Went to: ${b.data.to}`;
       }
       if (b.type === 'ui.click' && b.message) {
-        return `${n}. 👆 Clicked: ${b.message}`;
+        const label = cleanClickLabel(b.message);
+        if (!label) return null;
+        n++;
+        return `${n}. 👆 Clicked: ${label}`;
       }
       if (b.type === 'http' && b.data) {
+        const url = (b.data.url || '').replace(/^https?:\/\/[^/]+/, '').split('?')[0];
         const status = b.data.status_code ? ` → ${b.data.status_code}` : '';
-        return `${n}. 🌐 API Call: ${b.data.method || 'GET'} ${b.data.url}${status}`;
+        n++;
+        return `${n}. 🌐 API: ${b.data.method || 'GET'} ${url}${status}`;
       }
       if (b.type === 'error' && b.message) {
+        n++;
         return `${n}. ❌ Error: ${b.message}`;
       }
-      if (b.message) {
+      if (b.message && b.message.length < 100) {
+        n++;
         return `${n}. • ${b.message}`;
       }
       return null;
