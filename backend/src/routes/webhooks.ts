@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { sendEmail } from '../services/emailService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
-import { scorePriority } from '../services/aiService';
+import { scorePriority, analyzeBug } from '../services/aiService';
 
 const router = Router();
 
@@ -20,53 +20,25 @@ interface SentryBreadcrumb {
   };
 }
 
-function cleanClickLabel(msg: string): string | null {
-  // Short readable message with no CSS classes — use as-is
-  if (msg.length < 50 && !msg.includes('.') && !msg.match(/^[0-9a-f]{20,}$/i)) return msg;
-  // Extract element tag + type from Tailwind CSS selector string
-  const match = msg.match(/^(\w+)[^[]*(?:\[type="([^"]+)"\])?/);
-  if (!match) return null;
-  const tag = match[1];
-  const type = match[2];
-  if (tag === 'button' && type === 'submit') return 'Submit button';
-  if (tag === 'button') return 'Button';
-  if (tag === 'input' && type === 'password') return 'Password field';
-  if (tag === 'input' && type === 'email') return 'Email field';
-  if (tag === 'input') return 'Input field';
-  if (tag === 'a') return 'Link';
-  if (tag === 'span' || tag === 'div' || tag === 'p') return null;
-  return tag;
-}
-
 function formatBreadcrumbs(values: SentryBreadcrumb[]): string {
-  let n = 0;
   return values
-    .map((b) => {
-      // Skip hash-looking default breadcrumbs
-      if (b.message?.match(/^[0-9a-f]{20,}$/i)) return null;
-
+    .filter((b) => b.type !== 'default' || b.message)
+    .map((b, i) => {
+      const n = i + 1;
       if (b.type === 'navigation' && b.data?.from && b.data?.to) {
-        n++;
-        return `${n}. 🔀 Went to: ${b.data.to}`;
+        return `${n}. 🔀 Navigated: ${b.data.from} → ${b.data.to}`;
       }
       if (b.type === 'ui.click' && b.message) {
-        const label = cleanClickLabel(b.message);
-        if (!label) return null;
-        n++;
-        return `${n}. 👆 Clicked: ${label}`;
+        return `${n}. 👆 Clicked: ${b.message}`;
       }
       if (b.type === 'http' && b.data) {
-        const url = (b.data.url || '').replace(/^https?:\/\/[^/]+/, '').split('?')[0];
         const status = b.data.status_code ? ` → ${b.data.status_code}` : '';
-        n++;
-        return `${n}. 🌐 API: ${b.data.method || 'GET'} ${url}${status}`;
+        return `${n}. 🌐 API Call: ${b.data.method || 'GET'} ${b.data.url}${status}`;
       }
       if (b.type === 'error' && b.message) {
-        n++;
         return `${n}. ❌ Error: ${b.message}`;
       }
-      if (b.message && b.message.length < 100) {
-        n++;
+      if (b.message) {
         return `${n}. • ${b.message}`;
       }
       return null;
@@ -118,6 +90,21 @@ router.post('/sentry', async (req: Request, res: Response) => {
       sentryUrl ? `Sentry Link: ${sentryUrl}` : null,
     ].filter((l) => l !== null).join('\n');
 
+    // AI analysis (fire and forget — don't block email)
+    let aiSection = '';
+    try {
+      const analysis = await analyzeBug(title, stepsText);
+      aiSection = [
+        ``,
+        `─────────────────────────`,
+        `🤖 AI Analysis`,
+        `Root Cause:    ${analysis.rootCause}`,
+        `Trigger:       ${analysis.likelyCause}`,
+        `Suggested Fix: ${analysis.suggestedFix}`,
+        `Confidence:    ${analysis.confidence}%`,
+      ].join('\n');
+    } catch { /* AI optional — don't fail email */ }
+
     const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
 
     // Send email to Yash
@@ -126,7 +113,7 @@ router.post('/sentry', async (req: Request, res: Response) => {
         to: notifyEmail,
         toName: 'Yash',
         subject: `🐛 Bug Report — "${title}"`,
-        body,
+        body: body + aiSection,
       });
     }
 

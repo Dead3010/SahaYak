@@ -193,6 +193,61 @@ If non-English:
   return { language: 'en', languageName: 'English' };
 }
 
+export interface BugAnalysisResult {
+  rootCause: string;
+  likelyCause: string;
+  confidence: number;
+  suggestedFix: string;
+}
+
+export async function analyzeBug(
+  errorTitle: string,
+  stepsText: string
+): Promise<BugAnalysisResult> {
+  const model = getClient().getGenerativeModel({ model: MODEL });
+
+  const result = await withRetry(() =>
+    model.generateContent(
+      `You are a senior software engineer analyzing a bug report.
+
+Error: ${errorTitle}
+
+Steps leading to the error:
+${stepsText}
+
+Respond in this exact JSON format (no markdown, no code fences):
+{
+  "rootCause": "<1 sentence: what caused this error technically>",
+  "likelyCause": "<1 sentence: what the user did that triggered it>",
+  "confidence": <number 0-100>,
+  "suggestedFix": "<1 sentence: how to fix it>"
+}`
+    )
+  );
+
+  let text = safeText(result);
+  text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.rootCause && parsed.likelyCause && parsed.suggestedFix) {
+      return {
+        rootCause: parsed.rootCause,
+        likelyCause: parsed.likelyCause,
+        confidence: Number(parsed.confidence) || 80,
+        suggestedFix: parsed.suggestedFix,
+      };
+    }
+  } catch { /* fall through */ }
+
+  return {
+    rootCause: 'Could not analyze automatically.',
+    likelyCause: 'Unknown trigger.',
+    confidence: 0,
+    suggestedFix: 'Review the error and steps manually.',
+  };
+}
+
 export async function suggestReply(
   subject: string,
   body: string,
