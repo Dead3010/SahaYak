@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle, BarChart3, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle, BarChart3, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
 import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
@@ -99,7 +99,7 @@ export default function Tickets() {
   });
   const agents = (usersData?.users ?? []).filter((u) => u.role === 'AGENT');
 
-  const { data, isLoading: loading } = useQuery({
+  const { data, isLoading: loading, isFetching, refetch } = useQuery({
     queryKey: ['tickets', params],
     queryFn: () => api.tickets.list(params),
   });
@@ -153,13 +153,24 @@ export default function Tickets() {
           </div>
         )}
 
-        <Button
-          onClick={() => { setForm(EMPTY_FORM); setFormError(''); setDialogOpen(true); }}
-          className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200 hover:shadow-md transition-all duration-150 shrink-0"
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          New Ticket
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="rounded-full font-semibold px-4 border-slate-200 hover:border-slate-300 transition-all duration-150"
+            title="Refresh tickets"
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            onClick={() => { setForm(EMPTY_FORM); setFormError(''); setDialogOpen(true); }}
+            className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200 hover:shadow-md transition-all duration-150"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            New Ticket
+          </Button>
+        </div>
       </div>
 
       {/* Create ticket dialog */}
