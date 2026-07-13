@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell } from 'lucide-react';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell, Ticket, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import { cn } from '@/lib/utils';
@@ -38,10 +38,26 @@ export default function Sidebar() {
 
   const { data: newTickets } = useQuery({
     queryKey: ['tickets-new-notif'],
-    queryFn: () => api.tickets.list({ status: 'NEW', limit: '8', sortBy: 'createdAt', sortOrder: 'desc' }),
-    refetchInterval: 30000,
+    queryFn: () => api.tickets.list({ status: 'NEW', limit: '10', sortBy: 'createdAt', sortOrder: 'desc' }),
+    refetchInterval: 15000,
   });
   const newCount = newTickets?.total ?? 0;
+
+  const prevCountRef = useRef<number | null>(null);
+  const [toastTicket, setToastTicket] = useState<{ subject: string; fromName: string } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (newTickets === undefined) return;
+    const current = newTickets.total;
+    if (prevCountRef.current !== null && current > prevCountRef.current) {
+      const newest = newTickets.tickets[0];
+      setToastTicket({ subject: newest?.subject ?? 'New Ticket', fromName: newest?.fromName ?? '' });
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToastTicket(null), 6000);
+    }
+    prevCountRef.current = current;
+  }, [newTickets]);
   const [contactOpen, setContactOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
   const [bugForm, setBugForm] = useState({ name: '', email: '', area: '', description: '' });
@@ -371,6 +387,31 @@ export default function Sidebar() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* ── New ticket toast popup ── */}
+      {toastTicket && (
+        <div
+          className="fixed bottom-5 right-5 z-[100] flex items-start gap-3 px-4 py-3 rounded-2xl shadow-xl animate-fade-in"
+          style={{ backgroundColor: '#1e3a8a', border: '1px solid #1d4ed8', minWidth: '260px', maxWidth: '320px' }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#ffffff20' }}>
+            <Ticket className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white uppercase tracking-wide">New Ticket</p>
+            <p className="text-sm font-semibold text-blue-100 truncate mt-0.5">{toastTicket.subject}</p>
+            {toastTicket.fromName && (
+              <p className="text-xs text-blue-300 mt-0.5">from {toastTicket.fromName}</p>
+            )}
+          </div>
+          <button
+            onClick={() => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); setToastTicket(null); }}
+            className="shrink-0 text-blue-300 hover:text-white transition-colors duration-150 mt-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* ── Left sidebar ── */}
       <aside
