@@ -18,6 +18,7 @@ import userRoutes from './routes/users';
 import settingsRoutes from './routes/settings';
 import teamRoutes from './routes/teams';
 import webhookRoutes from './routes/webhooks';
+import chatRoutes from './routes/chat';
 import { startGmailPoller } from './services/gmailPoller';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

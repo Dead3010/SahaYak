@@ -41,6 +41,7 @@ export function useAuthProvider(): AuthContextType {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('ganga_chat');
     setUser(null);
   };
 

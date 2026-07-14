@@ -248,6 +248,32 @@ Respond in this exact JSON format (no markdown, no code fences):
   };
 }
 
+export async function chatWithGanga(
+  message: string,
+  history: Array<{ role: 'user' | 'model'; parts: string }>,
+  kbContext: string
+): Promise<string> {
+  const model = getClient().getGenerativeModel({
+    model: MODEL,
+    systemInstruction: `You are Ganga, a friendly and helpful support assistant for SahaYak AI.
+Answer questions ONLY based on the knowledge base provided below.
+If the knowledge base does not contain a relevant answer, politely say you don't have that information and suggest the user submit a support ticket.
+Be warm, concise, and helpful. Use simple language.
+
+KNOWLEDGE BASE:
+${kbContext}`,
+  });
+
+  const geminiHistory = history.map((h) => ({
+    role: h.role,
+    parts: [{ text: h.parts }],
+  }));
+
+  const chat = model.startChat({ history: geminiHistory });
+  const result = await withRetry(() => chat.sendMessage(message));
+  return safeText(result);
+}
+
 export async function suggestReply(
   subject: string,
   body: string,

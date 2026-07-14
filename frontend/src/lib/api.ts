@@ -83,4 +83,9 @@ export const api = {
       request<{ user: import('../types').User }>('PATCH', `/users/${id}`, data),
     delete: (id: string) => request<{ message: string }>('DELETE', `/users/${id}`),
   },
+
+  chat: {
+    send: (message: string, history: Array<{ role: string; parts: string }>) =>
+      request<{ reply: string }>('POST', '/chat', { message, history }),
+  },
 };
