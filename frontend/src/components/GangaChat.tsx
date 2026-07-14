@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, X, Send } from 'lucide-react';
+import { X, Send } from 'lucide-react';
 import { api } from '../lib/api';
 
 interface Message {
@@ -91,7 +91,7 @@ export default function GangaChat() {
           >
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+                <span className="text-base">😊</span>
               </div>
               <span className="text-sm font-bold text-white">Ganga 🤗</span>
               <span className="text-[10px] text-blue-200 ml-1">AI Assistant</span>
@@ -109,7 +109,7 @@ export default function GangaChat() {
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center gap-2 pb-4">
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-blue-600" />
+                  <span className="text-2xl">😊</span>
                 </div>
                 <p className="text-xs font-semibold text-slate-600">Hi! I'm Ganga 🤗</p>
                 <p className="text-xs text-slate-400 max-w-[200px]">Ask me anything about SahaYak AI — I'm here to help!</p>
@@ -186,7 +186,7 @@ export default function GangaChat() {
         className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 ${bouncing ? 'animate-bounce' : ''}`}
         style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', boxShadow: '0 4px 16px rgba(37,99,235,0.4)' }}
       >
-        {open ? <X className="w-5 h-5 text-white" /> : <Bot className="w-6 h-6 text-white" />}
+        {open ? <X className="w-5 h-5 text-white" /> : <span className="text-2xl">😊</span>}
       </button>
 
     </div>
