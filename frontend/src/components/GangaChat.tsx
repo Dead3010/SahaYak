@@ -1,16 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send } from 'lucide-react';
 import { api } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
 
 interface Message {
   role: 'user' | 'model';
   content: string;
 }
 
+type BugFlow = null | 'ask_description' | 'ask_area';
+
 const STORAGE_KEY = 'ganga_chat';
 const TOOLTIP_MESSAGES = ["Hi, I'm Ganga🤗", "Error or Doubt? I'm here for it😊"];
 
+const isBugIntent = (msg: string): boolean => {
+  const t = msg.toLowerCase();
+  return (
+    t.includes('report a bug') ||
+    t.includes('report bug') ||
+    t.includes('found a bug') ||
+    t.includes("there's a bug") ||
+    t.includes('there is a bug') ||
+    t.includes('bug report') ||
+    t.includes('something is broken') ||
+    t.includes('something broke') ||
+    t.includes('i want to report') ||
+    (t.includes('bug') && (t.includes('report') || t.includes('found') || t.includes('have a')))
+  );
+};
+
 export default function GangaChat() {
+  const { user } = useAuth();
+
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
@@ -19,12 +40,14 @@ export default function GangaChat() {
   const [loading, setLoading] = useState(false);
   const [tooltipMsg, setTooltipMsg] = useState<string | null>(null);
   const [bouncing, setBouncing] = useState(false);
+  const [bugFlow, setBugFlow] = useState<BugFlow>(null);
+
+  const bugDescriptionRef = useRef('');
   const tooltipIndexRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(open);
   openRef.current = open;
 
-  // Bounce + tooltip every 15s when closed
   useEffect(() => {
     const interval = setInterval(() => {
       if (openRef.current) return;
@@ -38,32 +61,70 @@ export default function GangaChat() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
+
+  const pushModel = (content: string) =>
+    setMessages((prev) => [...prev, { role: 'model', content }]);
 
   const send = async () => {
     const text = input.trim();
     if (!text || loading) return;
 
     const userMsg: Message = { role: 'user', content: text };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
+    const withUser = [...messages, userMsg];
+    setMessages(withUser);
     setInput('');
-    setLoading(true);
 
+    // ── Bug flow step 2: received description → ask for area ──
+    if (bugFlow === 'ask_description') {
+      bugDescriptionRef.current = text;
+      setBugFlow('ask_area');
+      pushModel("Got it! 📍 Which part of the app was affected?\n(e.g. Tickets, Dashboard, AI features, Email setup, Login…)");
+      return;
+    }
+
+    // ── Bug flow step 3: received area → submit report ──
+    if (bugFlow === 'ask_area') {
+      setLoading(true);
+      try {
+        await api.settings.reportBug({
+          name: user?.name || 'Unknown',
+          email: user?.email || 'unknown@unknown.com',
+          description: bugDescriptionRef.current,
+          area: text,
+        });
+        pushModel("✅ Bug reported! Our team will look into it. Thank you for helping us improve SahaYak AI 🙏");
+      } catch {
+        pushModel("Sorry, I couldn't submit the bug report right now. Please use the bug report form in the sidebar instead.");
+      } finally {
+        setLoading(false);
+        setBugFlow(null);
+        bugDescriptionRef.current = '';
+      }
+      return;
+    }
+
+    // ── Bug flow step 1: detect intent ──
+    if (isBugIntent(text)) {
+      setBugFlow('ask_description');
+      pushModel("I'd love to help you report that! 🐛\nCan you briefly describe what went wrong?");
+      return;
+    }
+
+    // ── Normal AI chat ──
+    setLoading(true);
     try {
-      const history = updated.slice(0, -1).map((m) => ({ role: m.role, parts: m.content }));
+      const history = withUser.slice(0, -1).map((m) => ({ role: m.role, parts: m.content }));
       const { reply } = await api.chat.send(text, history);
-      setMessages((prev) => [...prev, { role: 'model', content: reply }]);
+      pushModel(reply);
     } catch {
-      setMessages((prev) => [...prev, { role: 'model', content: "Sorry, I couldn't get a response right now. Please try again." }]);
+      pushModel("Sorry, I couldn't get a response right now. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +173,9 @@ export default function GangaChat() {
                   <span className="text-2xl">😊</span>
                 </div>
                 <p className="text-xs font-semibold text-slate-600">Hi! I'm Ganga 🤗</p>
-                <p className="text-xs text-slate-400 max-w-[200px]">Ask me anything about SahaYak AI — I'm here to help!</p>
+                <p className="text-xs text-slate-400 max-w-[200px]">
+                  Ask me anything about SahaYak AI — or say <span className="font-medium text-slate-500">"report a bug"</span> to log an issue!
+                </p>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -153,7 +216,11 @@ export default function GangaChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
-              placeholder="Ask Ganga…"
+              placeholder={
+                bugFlow === 'ask_description' ? 'Describe the bug…' :
+                bugFlow === 'ask_area' ? 'Which part of the app?' :
+                'Ask Ganga…'
+              }
               disabled={loading}
               className="flex-1 text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 bg-slate-50 focus:bg-white transition-all duration-150 disabled:opacity-50"
             />
@@ -171,9 +238,7 @@ export default function GangaChat() {
 
       {/* Tooltip bubble */}
       {tooltipMsg && !open && (
-        <div
-          className="relative bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded-xl shadow-lg whitespace-nowrap animate-fade-in"
-        >
+        <div className="relative bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded-xl shadow-lg whitespace-nowrap animate-fade-in">
           {tooltipMsg}
           <div className="absolute -bottom-1.5 left-5 w-3 h-3 bg-slate-800 rotate-45" />
         </div>
