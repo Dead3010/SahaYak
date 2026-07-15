@@ -3,7 +3,7 @@ import { TicketCategory, TicketPriority } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 
 const getClient = () => new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
