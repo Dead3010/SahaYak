@@ -13,6 +13,18 @@ type BugFlow = null | 'ask_description' | 'ask_area';
 const STORAGE_KEY = 'ganga_chat';
 const TOOLTIP_MESSAGES = ["Hi, I'm Ganga🤗", "Error or Doubt? I'm here for it😊"];
 
+const AREA_OPTIONS = [
+  'Tickets',
+  'Dashboard',
+  'AI Features',
+  'Email Setup',
+  'Teams',
+  'Users & Roles',
+  'Login / Account',
+  'Billing',
+  'Other:',
+];
+
 const isBugIntent = (msg: string): boolean => {
   const t = msg.toLowerCase();
   return (
@@ -41,10 +53,12 @@ export default function GangaChat() {
   const [tooltipMsg, setTooltipMsg] = useState<string | null>(null);
   const [bouncing, setBouncing] = useState(false);
   const [bugFlow, setBugFlow] = useState<BugFlow>(null);
+  const [showAreaChips, setShowAreaChips] = useState(false);
 
   const bugDescriptionRef = useRef('');
   const tooltipIndexRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const openRef = useRef(open);
   openRef.current = open;
 
@@ -63,7 +77,7 @@ export default function GangaChat() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, showAreaChips]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
@@ -71,6 +85,36 @@ export default function GangaChat() {
 
   const pushModel = (content: string) =>
     setMessages((prev) => [...prev, { role: 'model', content }]);
+
+  const submitBugReport = async (area: string) => {
+    setShowAreaChips(false);
+    setMessages((prev) => [...prev, { role: 'user', content: area }]);
+    setLoading(true);
+    try {
+      await api.settings.reportBug({
+        name: user?.name || 'Unknown',
+        email: user?.email || 'unknown@unknown.com',
+        description: bugDescriptionRef.current,
+        area,
+      });
+      pushModel("✅ Bug reported! Our team will look into it. Thank you for helping us improve SahaYak AI 🙏");
+    } catch {
+      pushModel("Sorry, I couldn't submit the bug report right now. Please use the bug report form in the sidebar instead.");
+    } finally {
+      setLoading(false);
+      setBugFlow(null);
+      bugDescriptionRef.current = '';
+    }
+  };
+
+  const handleChipClick = (option: string) => {
+    if (option === 'Other:') {
+      setShowAreaChips(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+      return;
+    }
+    submitBugReport(option);
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -81,43 +125,29 @@ export default function GangaChat() {
     setMessages(withUser);
     setInput('');
 
-    // ── Bug flow step 2: received description → ask for area ──
+    // Bug flow step 2: received description → show area chips
     if (bugFlow === 'ask_description') {
       bugDescriptionRef.current = text;
       setBugFlow('ask_area');
-      pushModel("Got it! 📍 Which part of the app was affected?\n(e.g. Tickets, Dashboard, AI features, Email setup, Login…)");
+      setShowAreaChips(true);
+      pushModel("Got it! 📍 Which part of the app was affected?");
       return;
     }
 
-    // ── Bug flow step 3: received area → submit report ──
+    // Bug flow step 3: received custom "Other:" area → submit
     if (bugFlow === 'ask_area') {
-      setLoading(true);
-      try {
-        await api.settings.reportBug({
-          name: user?.name || 'Unknown',
-          email: user?.email || 'unknown@unknown.com',
-          description: bugDescriptionRef.current,
-          area: text,
-        });
-        pushModel("✅ Bug reported! Our team will look into it. Thank you for helping us improve SahaYak AI 🙏");
-      } catch {
-        pushModel("Sorry, I couldn't submit the bug report right now. Please use the bug report form in the sidebar instead.");
-      } finally {
-        setLoading(false);
-        setBugFlow(null);
-        bugDescriptionRef.current = '';
-      }
+      await submitBugReport(text);
       return;
     }
 
-    // ── Bug flow step 1: detect intent ──
+    // Bug flow step 1: detect intent
     if (isBugIntent(text)) {
       setBugFlow('ask_description');
       pushModel("I'd love to help you report that! 🐛\nCan you briefly describe what went wrong?");
       return;
     }
 
-    // ── Normal AI chat ──
+    // Normal AI chat
     setLoading(true);
     try {
       const history = withUser.slice(0, -1).map((m) => ({ role: m.role, parts: m.content }));
@@ -174,10 +204,12 @@ export default function GangaChat() {
                 </div>
                 <p className="text-xs font-semibold text-slate-600">Hi! I'm Ganga 🤗</p>
                 <p className="text-xs text-slate-400 max-w-[200px]">
-                  Ask me anything about SahaYak AI — or say <span className="font-medium text-slate-500">"report a bug"</span> to log an issue!
+                  Ask me anything about SahaYak AI — or say{' '}
+                  <span className="font-medium text-slate-500">"report a bug"</span> to log an issue!
                 </p>
               </div>
             )}
+
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
@@ -191,6 +223,26 @@ export default function GangaChat() {
                 </div>
               </div>
             ))}
+
+            {/* Area chips — shown after Ganga asks "which part" */}
+            {showAreaChips && !loading && (
+              <div className="flex flex-wrap gap-1.5 pt-1 animate-fade-in">
+                {AREA_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => handleChipClick(option)}
+                    className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-150 hover:-translate-y-0.5 ${
+                      option === 'Other:'
+                        ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                        : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loading && (
               <div className="flex justify-start">
                 <div className="bg-white border border-slate-100 shadow-sm rounded-2xl rounded-bl-sm px-3 py-2.5">
@@ -212,21 +264,22 @@ export default function GangaChat() {
           {/* Input */}
           <div className="px-3 py-3 border-t border-slate-100 bg-white flex gap-2 shrink-0">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={
                 bugFlow === 'ask_description' ? 'Describe the bug…' :
-                bugFlow === 'ask_area' ? 'Which part of the app?' :
+                bugFlow === 'ask_area' && !showAreaChips ? 'Type the area…' :
                 'Ask Ganga…'
               }
-              disabled={loading}
-              className="flex-1 text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 bg-slate-50 focus:bg-white transition-all duration-150 disabled:opacity-50"
+              disabled={loading || showAreaChips}
+              className="flex-1 text-sm px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-400 bg-slate-50 focus:bg-white transition-all duration-150 disabled:opacity-40"
             />
             <button
               onClick={send}
-              disabled={loading || !input.trim()}
+              disabled={loading || !input.trim() || showAreaChips}
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-150 disabled:opacity-40 shrink-0"
               style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
             >
