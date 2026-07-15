@@ -1,0 +1,5 @@
+ALTER TYPE "TicketSource" ADD VALUE 'WHATSAPP';
+
+ALTER TABLE "Ticket" ADD COLUMN "fromPhone" TEXT;
+
+ALTER TABLE "Reply" ADD COLUMN "sentViaWhatsApp" BOOLEAN NOT NULL DEFAULT false;
