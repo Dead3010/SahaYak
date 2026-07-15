@@ -1,8 +1,12 @@
 const BASE_URL = 'https://api.green-api.com';
 
 function getChatId(phone: string): string {
+  // Group IDs are stored as numeric string of group ID — append @g.us
+  // Personal IDs are phone numbers — append @c.us
   const digits = phone.replace(/\D/g, '');
-  return `${digits}@c.us`;
+  // Green API group IDs are typically 18+ digits; phone numbers are 10-15
+  const isGroup = digits.length > 15;
+  return isGroup ? `${digits}@g.us` : `${digits}@c.us`;
 }
 
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<void> {

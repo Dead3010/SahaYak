@@ -165,20 +165,28 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
     if (body?.typeWebhook !== 'incomingMessageReceived') return;
     if (body?.messageData?.typeMessage !== 'textMessage') return;
 
-    const phone: string = body.senderData?.sender?.replace('@c.us', '') || '';
-    const senderName: string = body.senderData?.senderName || phone;
+    const chatId: string = body.senderData?.chatId || '';
+    const senderPhone: string = body.senderData?.sender?.replace('@c.us', '') || '';
+    const senderName: string = body.senderData?.senderName || senderPhone;
     const text: string = body.messageData?.textMessageData?.textMessage || '';
 
-    if (!phone || !text) return;
+    if (!chatId || !text) return;
+
+    // For groups, chatId ends with @g.us; for personal it ends with @c.us
+    const isGroup = chatId.endsWith('@g.us');
+    const replyTarget = chatId.replace('@g.us', '').replace('@c.us', '');
+    const displayName = isGroup
+      ? `${senderName} (Group)`
+      : senderName;
 
     // Create ticket
     const ticket = await prisma.ticket.create({
       data: {
         subject: text.length > 80 ? text.slice(0, 77) + '...' : text,
         body: text,
-        fromEmail: `${phone}@whatsapp`,
-        fromName: senderName,
-        fromPhone: phone,
+        fromEmail: `${senderPhone}@whatsapp`,
+        fromName: displayName,
+        fromPhone: replyTarget,
         source: 'WHATSAPP',
       },
     });
