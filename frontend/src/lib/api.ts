@@ -79,7 +79,7 @@ export const api = {
     list: () => request<{ users: import('../types').User[] }>('GET', '/users'),
     create: (data: { email: string; password: string; name: string; role: string }) =>
       request<{ user: import('../types').User }>('POST', '/users', data),
-    update: (id: string, data: Partial<{ name: string; email: string; role: string; password: string }>) =>
+    update: (id: string, data: Partial<{ name: string; email: string; role: string; password: string; phone: string }>) =>
       request<{ user: import('../types').User }>('PATCH', `/users/${id}`, data),
     delete: (id: string) => request<{ message: string }>('DELETE', `/users/${id}`),
   },

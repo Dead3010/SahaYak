@@ -47,6 +47,14 @@ export async function triggerAutoResolve(ticketId: string) {
           where: { id: ticketId },
           data: { status: 'OPEN', assignedToId: agent.id, teamId: team.id },
         });
+        const agentWithPhone = await prisma.user.findUnique({ where: { id: agent.id }, select: { phone: true } });
+        if (agentWithPhone?.phone) {
+          const appUrl = process.env.FRONTEND_URL || 'https://sahayak-production-683a.up.railway.app';
+          sendWhatsAppMessage(
+            agentWithPhone.phone,
+            `🎫 New Ticket Assigned to You\n\nSubject: "${ticket.subject}"\nCategory: ${ticket.category.replace(/_/g, ' ')}\n\nPlease check it out ASAP!\n👉 ${appUrl}/tickets/${ticketId}`
+          ).catch(() => {});
+        }
       } else {
         console.log(`[AutoResolve] no team/agents found for category=${category}, leaving unassigned`);
         await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'OPEN' } });
@@ -190,8 +198,17 @@ export const updateTicket = async (req: AuthRequest, res: Response) => {
   const ticket = await prisma.ticket.update({
     where: { id: (req.params.id as string) },
     data,
-    include: { assignedTo: { select: { id: true, name: true, email: true } } },
+    include: { assignedTo: { select: { id: true, name: true, email: true, phone: true } } },
   });
+
+  if (assignedToId && ticket.assignedTo?.phone) {
+    const appUrl = process.env.FRONTEND_URL || 'https://sahayak-production-683a.up.railway.app';
+    sendWhatsAppMessage(
+      ticket.assignedTo.phone,
+      `🎫 New Ticket Assigned to You\n\nSubject: "${ticket.subject}"\nCategory: ${ticket.category.replace(/_/g, ' ')}\n\nPlease check it out ASAP!\n👉 ${appUrl}/tickets/${ticket.id}`
+    ).catch(() => {});
+  }
+
   res.json({ ticket });
 };
 

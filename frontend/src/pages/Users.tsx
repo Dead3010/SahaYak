@@ -11,9 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-type FormState = { name: string; email: string; password: string; role: string };
+type FormState = { name: string; email: string; password: string; role: string; phone: string };
 
-const EMPTY_FORM: FormState = { name: '', email: '', password: '', role: 'AGENT' };
+const EMPTY_FORM: FormState = { name: '', email: '', password: '', role: 'AGENT', phone: '' };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -62,7 +62,7 @@ export default function Users() {
   };
 
   const openEdit = (user: User) => {
-    setForm({ name: user.name, email: user.email, password: '', role: user.role });
+    setForm({ name: user.name, email: user.email, password: '', role: user.role, phone: user.phone || '' });
     setError('');
     setEditUser(user);
   };
@@ -82,7 +82,7 @@ export default function Users() {
 
   const handleUpdate = () => {
     if (!editUser) return;
-    const payload: Partial<FormState> = { name: form.name, email: form.email, role: form.role };
+    const payload: Partial<FormState> = { name: form.name, email: form.email, role: form.role, phone: form.phone };
     if (form.password) payload.password = form.password;
     setError('');
     updateMutation.mutate({ id: editUser.id, payload });
@@ -195,7 +195,7 @@ export default function Users() {
           <DialogHeader>
             <DialogTitle className="text-slate-900 font-bold">Edit User</DialogTitle>
           </DialogHeader>
-          <UserForm form={form} setForm={setForm} error={error} showPassword passwordLabel="New password (leave blank to keep)" />
+          <UserForm form={form} setForm={setForm} error={error} showPassword showPhone passwordLabel="New password (leave blank to keep)" />
           <DialogFooter>
             <Button variant="outline" onClick={handleClose} className="rounded-full">Cancel</Button>
             <Button onClick={handleUpdate} disabled={saving} className="rounded-full font-semibold">
@@ -213,12 +213,14 @@ function UserForm({
   setForm,
   error,
   showPassword,
+  showPhone = false,
   passwordLabel = 'Password',
 }: {
   form: FormState;
   setForm: React.Dispatch<React.SetStateAction<FormState>>;
   error: string;
   showPassword: boolean;
+  showPhone?: boolean;
   passwordLabel?: string;
 }) {
   return (
@@ -254,6 +256,22 @@ function UserForm({
           </SelectContent>
         </Select>
       </div>
+      {showPhone && (
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">
+            WhatsApp Number
+            <span className="ml-1.5 text-slate-400 font-normal text-xs">(optional — for ticket notifications)</span>
+          </Label>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="e.g. 919876543210"
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+          />
+          <p className="text-[11px] text-slate-400">Enter with country code, no spaces or symbols. e.g. 919876543210</p>
+        </div>
+      )}
     </div>
   );
 }

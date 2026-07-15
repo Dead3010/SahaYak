@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
 
-const USER_SELECT = { id: true, email: true, name: true, role: true, createdAt: true } as const;
+const USER_SELECT = { id: true, email: true, name: true, role: true, phone: true, createdAt: true } as const;
 
 const parseRole = (role: unknown): Role => (role === 'ADMIN' ? 'ADMIN' : 'AGENT');
 
@@ -47,13 +47,14 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
 export const updateUser = async (req: AuthRequest, res: Response) => {
   const { id } = req.params as Record<string, string>;
-  const { name, email, role, password } = req.body;
+  const { name, email, role, password, phone } = req.body;
 
   const data: Record<string, unknown> = {};
   if (name) data.name = name;
   if (email) data.email = email;
   if (role) data.role = parseRole(role);
   if (password) data.password = await bcrypt.hash(password, 12);
+  if (phone !== undefined) data.phone = phone || null;
 
   try {
     const user = await prisma.user.update({
