@@ -55,7 +55,6 @@ export default function Sidebar() {
 
   const markAsRead = (id: string) => setReadIds((prev) => prev.includes(id) ? prev : [...prev, id]);
   const markAllAsRead = () => setReadIds((prev) => [...new Set([...prev, ...(newTickets?.tickets ?? []).map((t) => t.id)])]);
-  const newCount = newTickets?.total ?? 0;
 
   const prevCountRef = useRef<number | null>(null);
   const [toastTicket, setToastTicket] = useState<{ subject: string; fromName: string } | null>(null);
