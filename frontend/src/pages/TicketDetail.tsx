@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff } from 'lucide-react';
+import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff, MessageCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
 import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
@@ -397,6 +397,11 @@ export default function TicketDetail() {
                           <Mail className="w-2.5 h-2.5" /> Sent
                         </Badge>
                       )}
+                      {reply.sentViaWhatsApp && (
+                        <Badge className="text-[10px] h-4 px-2 rounded-full bg-green-100 text-green-700 border-0 font-semibold hover:bg-green-100 flex items-center gap-1">
+                          <MessageCircle className="w-2.5 h-2.5" /> WhatsApp
+                        </Badge>
+                      )}
                       <span className="text-xs text-slate-400 ml-auto">{new Date(reply.createdAt).toLocaleString()}</span>
                     </div>
                     <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{reply.body}</p>
@@ -436,8 +441,11 @@ export default function TicketDetail() {
                   onChange={(e) => setSendEmail(e.target.checked)}
                   className="rounded border-slate-300 accent-blue-600"
                 />
-                <Mail className="w-3.5 h-3.5" />
-                Send via email to customer
+                {ticket.source === 'WHATSAPP' ? (
+                  <><MessageCircle className="w-3.5 h-3.5 text-green-600" /> Send via WhatsApp to customer</>
+                ) : (
+                  <><Mail className="w-3.5 h-3.5" /> Send via email to customer</>
+                )}
               </label>
               <div className="flex items-center gap-2">
                 {speechSupported && (

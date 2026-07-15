@@ -29,6 +29,7 @@ enum TicketCategory {
 enum TicketSource {
   EMAIL
   MANUAL
+  WHATSAPP
 }
 
 enum TicketPriority {
@@ -80,6 +81,8 @@ model Ticket {
   source         TicketSource   @default(MANUAL)
   priority       TicketPriority @default(MEDIUM)
 
+  fromPhone            String?
+
   detectedLanguage     String?
   detectedLanguageName String?
   translatedSubject    String?
@@ -101,7 +104,8 @@ model Reply {
   body         String
   isAI         Boolean  @default(false)
   isInternal   Boolean  @default(false)
-  sentViaEmail Boolean  @default(false)
+  sentViaEmail     Boolean  @default(false)
+  sentViaWhatsApp  Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)

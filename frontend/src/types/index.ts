@@ -1,7 +1,7 @@
 export type Role = 'ADMIN' | 'AGENT';
 export type TicketStatus = 'NEW' | 'PROCESSING' | 'OPEN' | 'RESOLVED' | 'CLOSED';
 export type TicketCategory = 'GENERAL_QUESTION' | 'TECHNICAL_QUESTION' | 'REFUND_REQUEST';
-export type TicketSource = 'EMAIL' | 'MANUAL';
+export type TicketSource = 'EMAIL' | 'MANUAL' | 'WHATSAPP';
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Team {
@@ -27,6 +27,7 @@ export interface Reply {
   isAI: boolean;
   isInternal: boolean;
   sentViaEmail: boolean;
+  sentViaWhatsApp: boolean;
   createdAt: string;
   author: { id: string; name: string } | null;
 }

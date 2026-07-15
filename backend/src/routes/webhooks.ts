@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { sendEmail } from '../services/emailService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
-import { scorePriority, analyzeBug } from '../services/aiService';
+import { scorePriority, analyzeBug, classifyTicket } from '../services/aiService';
 
 const router = Router();
 
@@ -151,6 +151,54 @@ router.post('/sentry', async (req: Request, res: Response) => {
 
   } catch (err) {
     console.error('[SentryWebhook] Error:', err instanceof Error ? err.message : err);
+  }
+});
+
+// ── WhatsApp webhook (Green API) ──
+router.post('/whatsapp', async (req: Request, res: Response) => {
+  res.json({ ok: true }); // respond immediately
+
+  try {
+    const body = req.body;
+
+    // Only handle incoming text messages
+    if (body?.typeWebhook !== 'incomingMessageReceived') return;
+    if (body?.messageData?.typeMessage !== 'textMessage') return;
+
+    const phone: string = body.senderData?.sender?.replace('@c.us', '') || '';
+    const senderName: string = body.senderData?.senderName || phone;
+    const text: string = body.messageData?.textMessageData?.textMessage || '';
+
+    if (!phone || !text) return;
+
+    // Create ticket
+    const ticket = await prisma.ticket.create({
+      data: {
+        subject: text.length > 80 ? text.slice(0, 77) + '...' : text,
+        body: text,
+        fromEmail: `${phone}@whatsapp`,
+        fromName: senderName,
+        fromPhone: phone,
+        source: 'WHATSAPP',
+      },
+    });
+
+    console.log(`[WhatsApp] New ticket from ${senderName} (${phone}): ${ticket.id}`);
+
+    classifyTicket(ticket.subject, ticket.body)
+      .then(async (category) => {
+        await prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } });
+        scorePriority(ticket.subject, ticket.body, category)
+          .then((priority) => prisma.ticket.update({ where: { id: ticket.id }, data: { priority } }))
+          .catch(() => {});
+      })
+      .catch(() => {})
+      .finally(() => {
+        triggerAutoResolve(ticket.id).catch(() => {});
+      });
+
+  } catch (err) {
+    console.error('[WhatsApp] Webhook error:', err instanceof Error ? err.message : err);
   }
 });
 

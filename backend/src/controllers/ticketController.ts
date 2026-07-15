@@ -3,6 +3,7 @@ import { TicketStatus, TicketCategory, TicketPriority } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, detectAndTranslate, parseGeminiError } from '../services/aiService';
 import { sendEmail } from '../services/emailService';
+import { sendWhatsAppMessage } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 
 export async function triggerAutoResolve(ticketId: string) {
@@ -15,13 +16,20 @@ export async function triggerAutoResolve(ticketId: string) {
     const result = await autoResolveFromKB(ticket.subject, ticket.body);
     console.log(`[AutoResolve] ticket=${ticketId} result=${result.status}${result.status === 'escalate' ? ` reason=${result.reason}` : ''}`);
     if (result.status === 'resolved') {
+      const isWhatsApp = ticket.source === 'WHATSAPP';
       await prisma.reply.create({
-        data: { body: result.reply, isAI: true, sentViaEmail: true, ticketId },
+        data: { body: result.reply, isAI: true, sentViaEmail: !isWhatsApp, sentViaWhatsApp: isWhatsApp, ticketId },
       });
       await prisma.ticket.update({ where: { id: ticketId }, data: { status: 'RESOLVED', aiResolved: true } });
-      sendEmail({ to: ticket.fromEmail, toName: ticket.fromName, subject: ticket.subject, body: result.reply })
-        .then(() => console.log(`[AutoResolve] email sent to ${ticket.fromEmail}`))
-        .catch((e) => console.error(`[AutoResolve] email FAILED: ${e.message}`));
+      if (isWhatsApp && ticket.fromPhone) {
+        sendWhatsAppMessage(ticket.fromPhone, result.reply)
+          .then(() => console.log(`[AutoResolve] WhatsApp sent to ${ticket.fromPhone}`))
+          .catch((e) => console.error(`[AutoResolve] WhatsApp FAILED: ${e.message}`));
+      } else {
+        sendEmail({ to: ticket.fromEmail, toName: ticket.fromName, subject: ticket.subject, body: result.reply })
+          .then(() => console.log(`[AutoResolve] email sent to ${ticket.fromEmail}`))
+          .catch((e) => console.error(`[AutoResolve] email FAILED: ${e.message}`));
+      }
     } else {
       // Re-fetch to get category set by classifier (may have run concurrently)
       const fresh = await prisma.ticket.findUnique({ where: { id: ticketId } });
@@ -263,15 +271,21 @@ export const addReply = async (req: AuthRequest, res: Response) => {
   if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
 
   let sentViaEmail = false;
+  let sentViaWhatsApp = false;
   if (doSend) {
-    await sendEmail({
-      to: ticket.fromEmail,
-      toName: ticket.fromName,
-      subject: ticket.subject,
-      body,
-      replyToTicketId: ticket.id,
-    });
-    sentViaEmail = true;
+    if (ticket.source === 'WHATSAPP' && ticket.fromPhone) {
+      await sendWhatsAppMessage(ticket.fromPhone, body);
+      sentViaWhatsApp = true;
+    } else {
+      await sendEmail({
+        to: ticket.fromEmail,
+        toName: ticket.fromName,
+        subject: ticket.subject,
+        body,
+        replyToTicketId: ticket.id,
+      });
+      sentViaEmail = true;
+    }
   }
 
   const reply = await prisma.reply.create({
@@ -279,6 +293,7 @@ export const addReply = async (req: AuthRequest, res: Response) => {
       body,
       isAI: false,
       sentViaEmail,
+      sentViaWhatsApp,
       ticketId: ticket.id,
       authorId: req.user!.id,
     },

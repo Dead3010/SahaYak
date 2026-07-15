@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell, Ticket, X } from 'lucide-react';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell, Ticket, X, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,20 @@ export default function Sidebar() {
     queryFn: () => api.tickets.list({ status: 'NEW', limit: '10', sortBy: 'createdAt', sortOrder: 'desc' }),
     refetchInterval: 15000,
   });
+
+  const [readIds, setReadIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('bell_read_ids') || '[]'); } catch { return []; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bell_read_ids', JSON.stringify(readIds));
+  }, [readIds]);
+
+  const displayedTickets = (newTickets?.tickets ?? []).filter((t) => !readIds.includes(t.id));
+  const unreadCount = displayedTickets.length;
+
+  const markAsRead = (id: string) => setReadIds((prev) => prev.includes(id) ? prev : [...prev, id]);
+  const markAllAsRead = () => setReadIds((prev) => [...new Set([...prev, ...(newTickets?.tickets ?? []).map((t) => t.id)])]);
   const newCount = newTickets?.total ?? 0;
 
   const prevCountRef = useRef<number | null>(null);
@@ -135,9 +149,9 @@ export default function Sidebar() {
             style={{ backgroundColor: bellOpen ? '#e0eaff' : '#eff6ff', border: '1px solid #bfdbfe' }}
           >
             <Bell className="w-4 h-4" style={{ color: '#1e3a8a' }} />
-            {newCount > 0 && (
+            {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: '#ef4444' }}>
-                {newCount > 9 ? '9+' : newCount}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
@@ -148,22 +162,42 @@ export default function Sidebar() {
               style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 60 }}
             >
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-800">New Tickets</span>
-                {newCount > 0 && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>{newCount} new</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">New Tickets</span>
+                  {unreadCount > 0 && (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fee2e2', color: '#991b1b' }}>{unreadCount} unread</span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors duration-150"
+                    title="Mark all as read"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Mark all read
+                  </button>
                 )}
               </div>
-              {newTickets?.tickets && newTickets.tickets.length > 0 ? (
+              {displayedTickets.length > 0 ? (
                 <div className="max-h-72 overflow-y-auto">
-                  {newTickets.tickets.map((ticket) => (
-                    <button
-                      key={ticket.id}
-                      onClick={() => { setBellOpen(false); navigate(`/tickets/${ticket.id}`); }}
-                      className="w-full text-left px-4 py-3 border-b border-slate-50 hover:bg-blue-50/40 transition-colors duration-150"
-                    >
-                      <p className="text-sm font-semibold text-slate-800 truncate">{ticket.subject}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{ticket.fromName} · {new Date(ticket.createdAt).toLocaleDateString()}</p>
-                    </button>
+                  {displayedTickets.map((ticket) => (
+                    <div key={ticket.id} className="flex items-center border-b border-slate-50 hover:bg-blue-50/40 transition-colors duration-150 group">
+                      <button
+                        onClick={() => { markAsRead(ticket.id); setBellOpen(false); navigate(`/tickets/${ticket.id}`); }}
+                        className="flex-1 text-left px-4 py-3 min-w-0"
+                      >
+                        <p className="text-sm font-semibold text-slate-800 truncate">{ticket.subject}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{ticket.fromName} · {new Date(ticket.createdAt).toLocaleDateString()}</p>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); markAsRead(ticket.id); }}
+                        title="Mark as read"
+                        className="shrink-0 mr-3 w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-emerald-100 transition-all duration-150"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               ) : (
