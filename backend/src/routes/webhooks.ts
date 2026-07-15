@@ -191,7 +191,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
       },
     });
 
-    console.log(`[WhatsApp] New ticket from ${senderName} (${phone}): ${ticket.id}`);
+    console.log(`[WhatsApp] New ticket from ${senderName} (${senderPhone}): ${ticket.id}`);
 
     classifyTicket(ticket.subject, ticket.body)
       .then(async (category) => {
