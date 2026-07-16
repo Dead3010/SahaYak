@@ -389,8 +389,14 @@ export default function TicketDetail() {
                     {ticket.fromName?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="text-white font-semibold text-sm leading-tight">{ticket.fromName}</p>
-                    <p className="text-green-300 text-[11px]">{ticket.fromPhone}</p>
+                    <p className="text-white font-semibold text-sm leading-tight">
+                      {waData?.chatName || ticket.fromName}
+                    </p>
+                    <p className="text-green-300 text-[11px]">
+                      {ticket.fromPhone && ticket.fromPhone.replace(/\D/g, '').length > 15
+                        ? 'WhatsApp Group'
+                        : ticket.fromPhone}
+                    </p>
                   </div>
                 </div>
                 <button

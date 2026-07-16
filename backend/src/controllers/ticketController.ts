@@ -3,7 +3,7 @@ import { TicketStatus, TicketCategory, TicketPriority } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, detectAndTranslate, parseGeminiError } from '../services/aiService';
 import { sendEmail } from '../services/emailService';
-import { sendWhatsAppMessage, getChatHistory } from '../services/whatsappService';
+import { sendWhatsAppMessage, getChatHistory, getContactName } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 
 export async function triggerAutoResolve(ticketId: string) {
@@ -388,7 +388,10 @@ export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) =>
     if (ticket.source !== 'WHATSAPP') { res.status(400).json({ error: 'Not a WhatsApp ticket' }); return; }
     if (!ticket.fromPhone) { res.status(400).json({ error: 'No phone number on this ticket' }); return; }
 
-    const allMessages = await getChatHistory(ticket.fromPhone, 100);
+    const [allMessages, chatName] = await Promise.all([
+      getChatHistory(ticket.fromPhone, 100),
+      getContactName(ticket.fromPhone),
+    ]);
 
     // 5-minute buffer before ticket creation to capture the triggering message
     const sinceMs = new Date(ticket.createdAt).getTime() - 5 * 60 * 1000;
@@ -396,7 +399,7 @@ export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) =>
       .filter((m) => m.timestamp * 1000 >= sinceMs)
       .reverse();
 
-    res.json({ messages });
+    res.json({ messages, chatName });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: msg });

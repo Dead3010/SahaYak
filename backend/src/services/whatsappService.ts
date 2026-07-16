@@ -62,6 +62,29 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
     .filter((m): m is WhatsAppMessage => m !== null);
 }
 
+export async function getContactName(phone: string): Promise<string | null> {
+  const instanceId = process.env.GREEN_API_INSTANCE_ID;
+  const apiToken = process.env.GREEN_API_TOKEN;
+
+  if (!instanceId || !apiToken) return null;
+
+  const chatId = getChatId(phone);
+  const url = `${BASE_URL}/waInstance${instanceId}/getContactInfo/${apiToken}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json() as { name?: string; contactName?: string };
+    return data.name || data.contactName || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<void> {
   const instanceId = process.env.GREEN_API_INSTANCE_ID;
   const apiToken = process.env.GREEN_API_TOKEN;
