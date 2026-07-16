@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { sendEmail } from '../services/emailService';
+import { sendWhatsAppMessage } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
 import { scorePriority, analyzeBug, classifyTicket } from '../services/aiService';
@@ -175,9 +176,17 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
     // For groups, chatId ends with @g.us; for personal it ends with @c.us
     const isGroup = chatId.endsWith('@g.us');
     const replyTarget = chatId.replace('@g.us', '').replace('@c.us', '');
-    const displayName = isGroup
-      ? `${senderName} (Group)`
-      : senderName;
+    const displayName = isGroup ? `${senderName} (Group)` : senderName;
+
+    // Filter greetings — reply friendly but don't create a ticket
+    const GREETINGS = /^(hi+|he+y+|hello+|hlo|helo|hola|namaste|namaskar|sup|yo|wassup|howdy|greetings|good\s*(morning|afternoon|evening|night)|hii+|hiii+)[\s!?.]*$/i;
+    if (GREETINGS.test(text.trim())) {
+      sendWhatsAppMessage(
+        replyTarget,
+        `👋 Hello ${senderName}! How can I help you today?\n\nPlease describe your issue in detail and we'll get back to you shortly. 😊`
+      ).catch(() => {});
+      return;
+    }
 
     // Create ticket
     const ticket = await prisma.ticket.create({
