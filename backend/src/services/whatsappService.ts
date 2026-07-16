@@ -14,7 +14,7 @@ export interface WhatsAppMessage {
   textMessage: string;
   timestamp: number;
   senderName: string;
-  isMedia?: boolean;
+  isMedia: boolean;
 }
 
 export async function getChatHistory(phone: string, count = 50): Promise<WhatsAppMessage[]> {
@@ -62,7 +62,7 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
         isMedia,
       };
     })
-    .filter((m): m is WhatsAppMessage => m !== null);
+    .filter((m): m is NonNullable<typeof m> & WhatsAppMessage => m !== null);
 }
 
 export async function getContactName(phone: string): Promise<string | null> {
