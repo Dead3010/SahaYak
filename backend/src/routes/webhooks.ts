@@ -162,6 +162,9 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
   try {
     const body = req.body;
 
+    // Log every webhook for debugging
+    console.log(`[WhatsApp] Webhook — type=${body?.typeWebhook} msgType=${body?.messageData?.typeMessage} raw=${JSON.stringify(body?.messageData).slice(0, 300)}`);
+
     // Only handle incoming messages
     if (body?.typeWebhook !== 'incomingMessageReceived') return;
     const msgType: string = body?.messageData?.typeMessage || '';
