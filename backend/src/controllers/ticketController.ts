@@ -392,7 +392,9 @@ export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) =>
 
     // 5-minute buffer before ticket creation to capture the triggering message
     const sinceMs = new Date(ticket.createdAt).getTime() - 5 * 60 * 1000;
-    const messages = allMessages.filter((m) => m.timestamp * 1000 >= sinceMs);
+    const messages = allMessages
+      .filter((m) => m.timestamp * 1000 >= sinceMs)
+      .reverse();
 
     res.json({ messages });
   } catch (err) {
