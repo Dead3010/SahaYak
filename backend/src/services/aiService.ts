@@ -248,6 +248,22 @@ Respond in this exact JSON format (no markdown, no code fences):
   };
 }
 
+export async function isSupportQuery(text: string): Promise<boolean> {
+  const model = getClient().getGenerativeModel({ model: MODEL });
+  const result = await withRetry(() =>
+    model.generateContent(
+      `Is this message a genuine customer support query? Answer only YES or NO.
+
+Message: "${text}"
+
+Rules:
+- YES: questions about products, billing, refunds, account issues, technical problems, feature requests, complaints
+- NO: casual greetings, random chit-chat, personal conversations, emojis only, gibberish, test messages`
+    )
+  );
+  return safeText(result).toUpperCase().includes('YES');
+}
+
 export async function chatWithGanga(
   message: string,
   history: Array<{ role: 'user' | 'model'; parts: string }>,

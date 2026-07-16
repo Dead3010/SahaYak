@@ -3,7 +3,7 @@ import { sendEmail } from '../services/emailService';
 import { sendWhatsAppMessage } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
-import { scorePriority, analyzeBug, classifyTicket } from '../services/aiService';
+import { scorePriority, analyzeBug, classifyTicket, isSupportQuery } from '../services/aiService';
 
 const router = Router();
 
@@ -178,12 +178,22 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
     const replyTarget = chatId.replace('@g.us', '').replace('@c.us', '');
     const displayName = isGroup ? `${senderName} (Group)` : senderName;
 
-    // Filter greetings — reply friendly but don't create a ticket
+    // Filter greetings instantly — no AI needed
     const GREETINGS = /^(hi+|he+y+|hello+|hlo|helo|hola|namaste|namaskar|sup|yo|wassup|howdy|greetings|good\s*(morning|afternoon|evening|night)|hii+|hiii+)[\s!?.]*$/i;
     if (GREETINGS.test(text.trim())) {
       sendWhatsAppMessage(
         replyTarget,
-        `👋 Hello ${senderName}! How can I help you today?\n\nPlease describe your issue in detail and we'll get back to you shortly. 😊`
+        `👋 Hello ${senderName}! How can I help you today?\n\nPlease describe your support issue in detail and we'll get back to you shortly. 😊`
+      ).catch(() => {});
+      return;
+    }
+
+    // Use Gemini to check if it's a genuine support query
+    const isSupport = await isSupportQuery(text).catch(() => true); // default to true if AI fails
+    if (!isSupport) {
+      sendWhatsAppMessage(
+        replyTarget,
+        `🙏 Hi ${senderName}! This channel is for customer support only.\n\nPlease describe your support issue and we'll be happy to help! 😊`
       ).catch(() => {});
       return;
     }
