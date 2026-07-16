@@ -47,6 +47,7 @@ export interface Ticket {
   aiResolved: boolean;
   source: TicketSource;
   priority: TicketPriority;
+  fromPhone: string | null;
   detectedLanguage: string | null;
   detectedLanguageName: string | null;
   translatedSubject: string | null;

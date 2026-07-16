@@ -12,8 +12,10 @@ RUN npm run build
 FROM node:20-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
+COPY backend/prisma ./prisma
 RUN npm install --fetch-retries=5 --fetch-retry-mintimeout=20000
 COPY backend/ ./
+RUN npx prisma generate
 RUN npm run build
 # Copy static assets into dist so they're included in the production stage
 RUN cp "src/services/knowledge-base (2).md" "dist/services/knowledge-base (2).md"
