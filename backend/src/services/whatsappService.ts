@@ -15,6 +15,9 @@ export interface WhatsAppMessage {
   timestamp: number;
   senderName: string;
   isMedia: boolean;
+  mediaType?: string;
+  downloadUrl?: string;
+  caption?: string;
 }
 
 export async function getChatHistory(phone: string, count = 50): Promise<WhatsAppMessage[]> {
@@ -44,6 +47,8 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
     typeMessage?: string;
     textMessage?: string;
     extendedTextMessage?: { text?: string };
+    downloadUrl?: string;
+    caption?: string;
     timestamp: number;
     senderName?: string;
   }>;
@@ -60,6 +65,9 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
         timestamp: m.timestamp,
         senderName: m.senderName || '',
         isMedia,
+        mediaType: isMedia ? m.typeMessage : undefined,
+        downloadUrl: isMedia ? m.downloadUrl : undefined,
+        caption: isMedia ? m.caption : undefined,
       };
     })
     .filter((m): m is NonNullable<typeof m> & WhatsAppMessage => m !== null);

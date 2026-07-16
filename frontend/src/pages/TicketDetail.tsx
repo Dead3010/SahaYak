@@ -464,9 +464,35 @@ export default function TicketDetail() {
                             </p>
                           )}
                           {msg.isMedia ? (
-                            <p className="text-sm text-slate-500 italic flex items-center gap-1.5">
-                              <Paperclip className="w-3.5 h-3.5 shrink-0" /> Media message
-                            </p>
+                            msg.mediaType === 'imageMessage' && msg.downloadUrl ? (
+                              <div>
+                                <img
+                                  src={msg.downloadUrl}
+                                  alt="image"
+                                  className="rounded-lg max-w-[220px] max-h-[200px] object-cover cursor-pointer"
+                                  onClick={() => window.open(msg.downloadUrl, '_blank')}
+                                />
+                                {msg.caption && <p className="text-sm text-slate-700 mt-1">{msg.caption}</p>}
+                              </div>
+                            ) : msg.mediaType === 'videoMessage' && msg.downloadUrl ? (
+                              <div>
+                                <video src={msg.downloadUrl} controls className="rounded-lg max-w-[220px]" />
+                                {msg.caption && <p className="text-sm text-slate-700 mt-1">{msg.caption}</p>}
+                              </div>
+                            ) : (
+                              <a
+                                href={msg.downloadUrl || '#'}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sm flex items-center gap-1.5 text-blue-600 hover:underline"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                                {msg.mediaType === 'audioMessage' ? '🎵 Audio' :
+                                 msg.mediaType === 'documentMessage' ? '📄 Document' :
+                                 msg.mediaType === 'stickerMessage' ? '🎭 Sticker' : '📎 Media'}
+                                {msg.caption && ` — ${msg.caption}`}
+                              </a>
+                            )
                           ) : (
                             <p className="text-sm text-slate-800 whitespace-pre-wrap leading-snug">{msg.textMessage}</p>
                           )}
