@@ -3,7 +3,7 @@ import { TicketStatus, TicketCategory, TicketPriority } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 import { classifyTicket, summarizeTicket, suggestReply, autoResolveFromKB, scorePriority, detectAndTranslate, parseGeminiError } from '../services/aiService';
 import { sendEmail } from '../services/emailService';
-import { sendWhatsAppMessage } from '../services/whatsappService';
+import { sendWhatsAppMessage, getChatHistory } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 
 export async function triggerAutoResolve(ticketId: string) {
@@ -378,6 +378,21 @@ export const prioritizeTicketHandler = async (req: AuthRequest, res: Response) =
     res.json({ ticket: updated, priority });
   } catch (err) {
     res.status(500).json({ error: parseGeminiError(err) });
+  }
+};
+
+export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id as string } });
+    if (!ticket) { res.status(404).json({ error: 'Ticket not found' }); return; }
+    if (ticket.source !== 'WHATSAPP') { res.status(400).json({ error: 'Not a WhatsApp ticket' }); return; }
+    if (!ticket.fromPhone) { res.status(400).json({ error: 'No phone number on this ticket' }); return; }
+
+    const messages = await getChatHistory(ticket.fromPhone);
+    res.json({ messages });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
   }
 };
 

@@ -13,6 +13,7 @@ import {
   addReply,
   addComment,
   getDashboardStats,
+  getWhatsAppChatHandler,
 } from '../controllers/ticketController';
 import { authenticate } from '../middleware/auth';
 
@@ -33,5 +34,6 @@ router.post('/:id/prioritize', prioritizeTicketHandler);
 router.post('/:id/detect-language', detectLanguageHandler);
 router.post('/:id/replies', addReply);
 router.post('/:id/comments', addComment);
+router.get('/:id/whatsapp-chat', getWhatsAppChatHandler);
 
 export default router;

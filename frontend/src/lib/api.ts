@@ -54,6 +54,8 @@ export const api = {
     addComment: (id: string, body: string) =>
       request<{ comment: import('../types').Reply }>('POST', `/tickets/${id}/comments`, { body }),
     stats: () => request<import('../types').DashboardStats>('GET', '/tickets/stats'),
+    getWhatsAppChat: (id: string) =>
+      request<{ messages: Array<{ type: 'incoming' | 'outgoing'; textMessage: string; timestamp: number; senderName: string }> }>('GET', `/tickets/${id}/whatsapp-chat`),
   },
 
   settings: {
