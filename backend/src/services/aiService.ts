@@ -248,6 +248,53 @@ Respond in this exact JSON format (no markdown, no code fences):
   };
 }
 
+export interface ImageAnalysisResult {
+  subject: string;
+  body: string;
+  whatsappReply: string;
+}
+
+export async function analyzeWhatsAppImage(imageUrl: string, senderName: string, mimeType = 'image/jpeg'): Promise<ImageAnalysisResult> {
+  const response = await fetch(imageUrl);
+  if (!response.ok) throw new Error(`Failed to download image: ${response.status}`);
+  const buffer = await response.arrayBuffer();
+  const base64 = Buffer.from(buffer).toString('base64');
+
+  const model = getClient().getGenerativeModel({ model: MODEL });
+
+  const result = await withRetry(() =>
+    model.generateContent([
+      { inlineData: { mimeType, data: base64 } },
+      {
+        text: `You are a customer support agent. A user named "${senderName}" has sent this image to show their issue.
+
+Analyze the image and respond in this exact JSON format (no markdown, no code fences):
+{
+  "subject": "<short 1-line title describing the issue visible in image>",
+  "body": "## Issue from Image\\n\\nUser: ${senderName}\\n\\n**What is visible:** <describe what the image shows>\\n\\n**Probable Cause:** <what likely caused this issue>\\n\\n**Suggested Fix:** <step-by-step fix>",
+  "whatsappReply": "<friendly WhatsApp reply to the user in their language explaining what you see and the suggested fix, max 3-4 lines>"
+}`,
+      },
+    ])
+  );
+
+  let text = safeText(result);
+  text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.subject && parsed.body && parsed.whatsappReply) {
+      return parsed as ImageAnalysisResult;
+    }
+  } catch { /* fall through */ }
+
+  return {
+    subject: 'Image support request',
+    body: `## Issue from Image\n\nUser: ${senderName}\n\n(AI could not analyze the image automatically. Please review manually.)`,
+    whatsappReply: `Hi ${senderName}! We received your image and our team will review it shortly. 🙏`,
+  };
+}
+
 export async function isSupportQuery(text: string): Promise<boolean> {
   const model = getClient().getGenerativeModel({ model: MODEL });
   const result = await withRetry(() =>

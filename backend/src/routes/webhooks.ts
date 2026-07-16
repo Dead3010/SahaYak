@@ -3,7 +3,7 @@ import { sendEmail } from '../services/emailService';
 import { sendWhatsAppMessage } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
-import { scorePriority, analyzeBug, classifyTicket, isSupportQuery } from '../services/aiService';
+import { scorePriority, analyzeBug, classifyTicket, isSupportQuery, analyzeWhatsAppImage } from '../services/aiService';
 
 const router = Router();
 
@@ -162,16 +162,71 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
   try {
     const body = req.body;
 
-    // Only handle incoming text messages
+    // Only handle incoming messages
     if (body?.typeWebhook !== 'incomingMessageReceived') return;
-    if (body?.messageData?.typeMessage !== 'textMessage') return;
+    const msgType: string = body?.messageData?.typeMessage || '';
+    if (msgType !== 'textMessage' && msgType !== 'imageMessage') return;
 
     const chatId: string = body.senderData?.chatId || '';
     const senderPhone: string = body.senderData?.sender?.replace('@c.us', '') || '';
     const senderName: string = body.senderData?.senderName || senderPhone;
     const text: string = body.messageData?.textMessageData?.textMessage || '';
 
-    if (!chatId || !text) return;
+    if (!chatId) return;
+
+    // ── Image message handler ──────────────────────────────────────────────────
+    if (msgType === 'imageMessage') {
+      const downloadUrl: string = body.messageData?.fileMessageData?.downloadUrl || '';
+      const mimeType: string = body.messageData?.fileMessageData?.mimeType || 'image/jpeg';
+      if (!downloadUrl) return;
+
+      const isGroup = chatId.endsWith('@g.us');
+      const replyTarget = chatId.replace('@g.us', '').replace('@c.us', '');
+      const displayName = isGroup ? `${senderName} (Group)` : senderName;
+
+      // Deduplication — don't create if active ticket exists
+      const activeTicket = await prisma.ticket.findFirst({
+        where: { fromPhone: replyTarget, source: 'WHATSAPP', status: { not: 'CLOSED' } },
+      });
+      if (activeTicket) {
+        console.log(`[WhatsApp] Active ticket ${activeTicket.id} exists for ${senderName}, skipping image ticket`);
+        return;
+      }
+
+      try {
+        const analysis = await analyzeWhatsAppImage(downloadUrl, senderName, mimeType);
+
+        const ticket = await prisma.ticket.create({
+          data: {
+            subject: analysis.subject,
+            body: analysis.body,
+            fromEmail: `${senderPhone}@whatsapp`,
+            fromName: displayName,
+            fromPhone: replyTarget,
+            source: 'WHATSAPP',
+          },
+        });
+
+        console.log(`[WhatsApp] Image ticket from ${senderName} (${senderPhone}): ${ticket.id}`);
+
+        sendWhatsAppMessage(replyTarget, analysis.whatsappReply).catch(() => {});
+
+        classifyTicket(ticket.subject, ticket.body)
+          .then(async (category) => {
+            await prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } });
+            scorePriority(ticket.subject, ticket.body, category)
+              .then((priority) => prisma.ticket.update({ where: { id: ticket.id }, data: { priority } }))
+              .catch(() => {});
+          })
+          .catch(() => {})
+          .finally(() => { triggerAutoResolve(ticket.id).catch(() => {}); });
+      } catch (err) {
+        console.error('[WhatsApp] Image analysis error:', err instanceof Error ? err.message : err);
+      }
+      return;
+    }
+
+    if (!text) return;
 
     // For groups, chatId ends with @g.us; for personal it ends with @c.us
     const isGroup = chatId.endsWith('@g.us');
@@ -185,6 +240,23 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         replyTarget,
         `👋 Hello ${senderName}! How can I help you today?\n\nPlease describe your support issue in detail and we'll get back to you shortly. 😊`
       ).catch(() => {});
+      return;
+    }
+
+    // Skip very short or casual messages (less than 8 chars or single words like "Ha", "Ok", "Cool")
+    const trimmed = text.trim();
+    if (trimmed.length < 8 || /^[a-zA-Zऀ-ॿ]{1,6}[!?.]*$/.test(trimmed)) return;
+
+    // Check if user already has an active (unresolved) ticket — don't create duplicates
+    const activeTicket = await prisma.ticket.findFirst({
+      where: {
+        fromPhone: replyTarget,
+        source: 'WHATSAPP',
+        status: { not: 'CLOSED' },
+      },
+    });
+    if (activeTicket) {
+      console.log(`[WhatsApp] Active ticket ${activeTicket.id} exists for ${senderName}, skipping`);
       return;
     }
 
