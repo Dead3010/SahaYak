@@ -395,8 +395,14 @@ export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) =>
 
     // 5-minute buffer before ticket creation to capture the triggering message
     const sinceMs = new Date(ticket.createdAt).getTime() - 5 * 60 * 1000;
+    const senderLower = ticket.fromName.toLowerCase();
     const messages = allMessages
-      .filter((m) => m.timestamp * 1000 >= sinceMs)
+      .filter((m) => {
+        if (m.timestamp * 1000 < sinceMs) return false;
+        // For group chats: only show messages from the ticket's sender + all outgoing replies
+        if (m.type === 'outgoing') return true;
+        return m.senderName.toLowerCase().includes(senderLower) || senderLower.includes(m.senderName.toLowerCase());
+      })
       .reverse();
 
     res.json({ messages, chatName });
