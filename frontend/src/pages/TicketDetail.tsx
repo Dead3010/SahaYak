@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff, MessageCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff, MessageCircle, RefreshCw, Send, Paperclip } from 'lucide-react';
 import { api } from '../lib/api';
 import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
 import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
@@ -24,6 +24,10 @@ export default function TicketDetail() {
   const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '', priority: '' });
   const [showUpdate, setShowUpdate] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+
+  const [waReplyBody, setWaReplyBody] = useState('');
+  const [waReplyError, setWaReplyError] = useState('');
+  const waChatEndRef = useRef<HTMLDivElement>(null);
 
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
@@ -61,6 +65,12 @@ export default function TicketDetail() {
   useEffect(() => {
     setSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
   }, []);
+
+  useEffect(() => {
+    if (waData?.messages?.length) {
+      waChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [waData?.messages]);
 
   const startListening = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -147,9 +157,14 @@ export default function TicketDetail() {
     mutationFn: ({ body, sendEmail }: { body: string; sendEmail: boolean }) =>
       api.tickets.addReply(id!, body, sendEmail),
     onSuccess: () => {
-      setReplyBody(''); setSendEmail(false); setError(''); invalidate();
+      setReplyBody(''); setSendEmail(false); setError('');
+      setWaReplyBody(''); setWaReplyError('');
+      invalidate();
       if (data?.ticket?.source === 'WHATSAPP') {
-        setTimeout(() => qc.invalidateQueries({ queryKey: ['whatsapp-chat', id] }), 2000);
+        setTimeout(() => {
+          qc.invalidateQueries({ queryKey: ['whatsapp-chat', id] });
+          setTimeout(() => waChatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
+        }, 2000);
       }
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'Failed to send reply'),
@@ -412,7 +427,7 @@ export default function TicketDetail() {
               {/* Chat body */}
               <div
                 style={{ backgroundColor: '#E5DDD5' }}
-                className="px-4 py-4 max-h-[420px] overflow-y-auto space-y-1.5"
+                className="px-4 py-4 h-[380px] overflow-y-auto space-y-1.5"
               >
                 {waLoading && (
                   <div className="space-y-3 py-2">
@@ -448,7 +463,13 @@ export default function TicketDetail() {
                               {msg.senderName}
                             </p>
                           )}
-                          <p className="text-sm text-slate-800 whitespace-pre-wrap leading-snug">{msg.textMessage}</p>
+                          {msg.isMedia ? (
+                            <p className="text-sm text-slate-500 italic flex items-center gap-1.5">
+                              <Paperclip className="w-3.5 h-3.5 shrink-0" /> Media message
+                            </p>
+                          ) : (
+                            <p className="text-sm text-slate-800 whitespace-pre-wrap leading-snug">{msg.textMessage}</p>
+                          )}
                           <p className="text-[10px] text-slate-400 text-right mt-0.5 leading-none">
                             {new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -457,7 +478,43 @@ export default function TicketDetail() {
                     ))
                   )
                 )}
+                <div ref={waChatEndRef} />
               </div>
+
+              {/* Reply box */}
+              <div style={{ backgroundColor: '#F0F0F0' }} className="px-3 py-2 flex items-end gap-2 border-t border-slate-200">
+                <textarea
+                  rows={1}
+                  value={waReplyBody}
+                  onChange={(e) => { setWaReplyBody(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (waReplyBody.trim() && !replyMutation.isPending) {
+                        replyMutation.mutate({ body: waReplyBody, sendEmail: true });
+                      }
+                    }
+                  }}
+                  placeholder="Type a message…"
+                  className="flex-1 resize-none bg-white rounded-2xl px-4 py-2 text-sm text-slate-800 outline-none border-0 shadow-sm leading-snug overflow-hidden"
+                  style={{ minHeight: '40px', maxHeight: '120px' }}
+                />
+                <button
+                  onClick={() => {
+                    if (waReplyBody.trim() && !replyMutation.isPending) {
+                      replyMutation.mutate({ body: waReplyBody, sendEmail: true });
+                    }
+                  }}
+                  disabled={replyMutation.isPending || !waReplyBody.trim()}
+                  style={{ backgroundColor: '#075E54' }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
+                >
+                  <Send className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              {waReplyError && (
+                <p className="text-xs text-red-600 px-4 py-1">{waReplyError}</p>
+              )}
             </div>
           )}
 

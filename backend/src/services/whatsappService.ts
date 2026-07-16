@@ -14,6 +14,7 @@ export interface WhatsAppMessage {
   textMessage: string;
   timestamp: number;
   senderName: string;
+  isMedia?: boolean;
 }
 
 export async function getChatHistory(phone: string, count = 50): Promise<WhatsAppMessage[]> {
@@ -36,6 +37,8 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
     throw new Error(`Green API error: ${text}`);
   }
 
+  const MEDIA_TYPES = new Set(['imageMessage', 'videoMessage', 'documentMessage', 'audioMessage', 'stickerMessage', 'locationMessage', 'contactMessage']);
+
   const data = await response.json() as Array<{
     type: string;
     typeMessage?: string;
@@ -46,17 +49,17 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
   }>;
 
   return data
+    .filter((m) => m.typeMessage)
     .map((m) => {
-      const text =
-        m.textMessage ||
-        m.extendedTextMessage?.text ||
-        null;
-      if (!text) return null;
+      const isMedia = MEDIA_TYPES.has(m.typeMessage!);
+      const text = m.textMessage || m.extendedTextMessage?.text || (isMedia ? '' : null);
+      if (!isMedia && !text) return null;
       return {
         type: m.type === 'incoming' ? 'incoming' : ('outgoing' as const),
-        textMessage: text,
+        textMessage: text || '',
         timestamp: m.timestamp,
         senderName: m.senderName || '',
+        isMedia,
       };
     })
     .filter((m): m is WhatsAppMessage => m !== null);
