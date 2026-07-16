@@ -40,18 +40,26 @@ export async function getChatHistory(phone: string, count = 50): Promise<WhatsAp
     type: string;
     typeMessage?: string;
     textMessage?: string;
+    extendedTextMessage?: { text?: string };
     timestamp: number;
     senderName?: string;
   }>;
 
   return data
-    .filter((m) => m.typeMessage === 'textMessage' && m.textMessage)
-    .map((m) => ({
-      type: m.type === 'incoming' ? 'incoming' : 'outgoing',
-      textMessage: m.textMessage!,
-      timestamp: m.timestamp,
-      senderName: m.senderName || '',
-    }));
+    .map((m) => {
+      const text =
+        m.textMessage ||
+        m.extendedTextMessage?.text ||
+        null;
+      if (!text) return null;
+      return {
+        type: m.type === 'incoming' ? 'incoming' : ('outgoing' as const),
+        textMessage: text,
+        timestamp: m.timestamp,
+        senderName: m.senderName || '',
+      };
+    })
+    .filter((m): m is WhatsAppMessage => m !== null);
 }
 
 export async function sendWhatsAppMessage(phone: string, message: string): Promise<void> {
