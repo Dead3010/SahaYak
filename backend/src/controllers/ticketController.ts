@@ -388,7 +388,12 @@ export const getWhatsAppChatHandler = async (req: AuthRequest, res: Response) =>
     if (ticket.source !== 'WHATSAPP') { res.status(400).json({ error: 'Not a WhatsApp ticket' }); return; }
     if (!ticket.fromPhone) { res.status(400).json({ error: 'No phone number on this ticket' }); return; }
 
-    const messages = await getChatHistory(ticket.fromPhone);
+    const allMessages = await getChatHistory(ticket.fromPhone, 100);
+
+    // 5-minute buffer before ticket creation to capture the triggering message
+    const sinceMs = new Date(ticket.createdAt).getTime() - 5 * 60 * 1000;
+    const messages = allMessages.filter((m) => m.timestamp * 1000 >= sinceMs);
+
     res.json({ messages });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
