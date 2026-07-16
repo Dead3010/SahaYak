@@ -68,18 +68,33 @@ export async function getContactName(phone: string): Promise<string | null> {
 
   if (!instanceId || !apiToken) return null;
 
-  const chatId = getChatId(phone);
-  const url = `${BASE_URL}/waInstance${instanceId}/getContactInfo/${apiToken}`;
+  const digits = phone.replace(/\D/g, '');
+  const isGroup = digits.length > 15;
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId }),
-    });
-    if (!response.ok) return null;
-    const data = await response.json() as { name?: string; contactName?: string };
-    return data.name || data.contactName || null;
+    if (isGroup) {
+      const groupId = `${digits}@g.us`;
+      const url = `${BASE_URL}/waInstance${instanceId}/getGroupData/${apiToken}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId }),
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as { subject?: string };
+      return data.subject || null;
+    } else {
+      const chatId = `${digits}@c.us`;
+      const url = `${BASE_URL}/waInstance${instanceId}/getContactInfo/${apiToken}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId }),
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as { name?: string; contactName?: string };
+      return data.name || data.contactName || null;
+    }
   } catch {
     return null;
   }
