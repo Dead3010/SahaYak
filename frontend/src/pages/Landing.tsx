@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Headphones, Inbox, Users, Zap, BarChart2, ArrowRight, CheckCircle,
   Clock, MessageSquare, ShieldCheck, Sparkles, Globe, Layers,
+  MessageCircle, ImageIcon, Mic, Languages, Bot, Filter,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
@@ -20,14 +21,34 @@ const features = [
     desc: 'Create, prioritize, and track every support request from a single organized workspace.',
   },
   {
-    icon: Users,
-    title: 'Team Collaboration',
-    desc: 'Assign tickets, leave notes, and keep your whole team aligned on every issue.',
+    icon: MessageCircle,
+    title: 'WhatsApp Integration',
+    desc: 'Receive WhatsApp messages as tickets. View full chat history and reply directly from the ticket — no switching apps.',
+  },
+  {
+    icon: ImageIcon,
+    title: 'AI Image Analysis',
+    desc: 'Customer sends a screenshot of their issue? Our AI analyzes the image, identifies the problem, and suggests a fix instantly.',
   },
   {
     icon: Zap,
     title: 'AI-Powered Assistance',
-    desc: 'Get smart suggestions, auto-categorization, and faster resolutions with built-in AI.',
+    desc: 'Auto-resolve tickets from your Knowledge Base, classify, summarize, and suggest replies — all with one click.',
+  },
+  {
+    icon: Mic,
+    title: 'Voice-to-Text Replies',
+    desc: 'Speak your reply instead of typing — perfect for agents on the go. Real-time voice transcription built right in.',
+  },
+  {
+    icon: Languages,
+    title: 'Auto Language Detection',
+    desc: 'Tickets in Hindi, Arabic, or any language? Auto-detected and translated to English so your team never misses context.',
+  },
+  {
+    icon: Users,
+    title: 'Team Collaboration',
+    desc: 'Assign tickets, leave internal notes, and keep your whole team aligned on every issue.',
   },
   {
     icon: BarChart2,
@@ -37,10 +58,12 @@ const features = [
 ];
 
 const highlights = [
+  'WhatsApp & Email integration',
+  'AI image analysis',
+  'Voice-to-text replies',
+  'Auto language detection',
   'Role-based access control',
-  'Real-time status updates',
-  'Email integration',
-  'Priority & category tagging',
+  'Smart ticket deduplication',
 ];
 
 const advantages = [
@@ -50,9 +73,24 @@ const advantages = [
     desc: 'Smart ticket routing and AI suggestions cut average resolution time by up to 40%, so customers get answers before frustration sets in.',
   },
   {
-    icon: MessageSquare,
-    title: 'Centralized Communication',
-    desc: 'All messages, notes, and updates live in one place. No more hunting through email threads or chat logs to find context.',
+    icon: MessageCircle,
+    title: 'WhatsApp-Native Support',
+    desc: 'Full WhatsApp chat history visible inside every ticket. Group messages, images, and replies — all in one place, no app switching.',
+  },
+  {
+    icon: Bot,
+    title: 'Auto-Resolve with AI',
+    desc: 'AI matches incoming tickets to your Knowledge Base and resolves them automatically — before an agent even opens the dashboard.',
+  },
+  {
+    icon: ImageIcon,
+    title: 'Visual Issue Understanding',
+    desc: 'Customers who can\'t type their problem can send a photo. Gemini AI reads the image and creates a detailed ticket with probable cause and fix.',
+  },
+  {
+    icon: Filter,
+    title: 'Smart Deduplication',
+    desc: 'No duplicate tickets from the same user. System tracks active tickets and prevents spam — clean queue, less noise for your team.',
   },
   {
     icon: ShieldCheck,
@@ -65,14 +103,9 @@ const advantages = [
     desc: 'Agents see what they need, admins control everything. Granular permissions keep your data secure and your team focused.',
   },
   {
-    icon: Sparkles,
-    title: 'AI-Assisted Routing',
-    desc: 'Our AI reads incoming tickets and instantly assigns them to the right team member based on topic, priority, and workload.',
-  },
-  {
     icon: Globe,
-    title: 'Easy Onboarding',
-    desc: 'Get your team up and running in minutes. Intuitive UI means zero training overhead — just log in and start resolving.',
+    title: 'Multilingual Support',
+    desc: 'Auto-detects ticket language and translates to English instantly. Support customers in Hindi, Arabic, or any language — effortlessly.',
   },
 ];
 
@@ -305,7 +338,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-4">
             {features.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
