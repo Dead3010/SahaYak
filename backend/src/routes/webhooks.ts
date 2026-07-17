@@ -207,6 +207,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
 
         sendWhatsAppMessage(replyTarget, analysis.whatsappReply).catch(() => {});
 
+        // Classify + prioritize only — no autoResolve since AI already replied via image analysis
         classifyTicket(ticket.subject, ticket.body)
           .then(async (category) => {
             await prisma.ticket.update({ where: { id: ticket.id }, data: { category, aiClassified: true } });
@@ -214,8 +215,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
               .then((priority) => prisma.ticket.update({ where: { id: ticket.id }, data: { priority } }))
               .catch(() => {});
           })
-          .catch(() => {})
-          .finally(() => { triggerAutoResolve(ticket.id).catch(() => {}); });
+          .catch(() => {});
       } catch (err) {
         console.error('[WhatsApp] Image analysis error:', err instanceof Error ? err.message : err);
       }
