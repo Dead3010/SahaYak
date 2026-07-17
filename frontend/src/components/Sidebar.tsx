@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell, Ticket, X, Check, CheckCheck } from 'lucide-react';
+import { Headphones, Mail, LogOut, ChevronDown, HeadphonesIcon, Phone, Bug, CheckCircle2, Bell, Ticket, X, Check, CheckCheck, Menu } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,7 @@ const adminNavItems = [
   { to: '/teams', label: 'Teams', initials: 'Te', color: '#6d28d9', bg: '#ede9fe', end: false },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boolean; setMobileOpen: (v: boolean) => void }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -128,8 +128,15 @@ export default function Sidebar() {
         className="fixed top-0 inset-x-0 z-50 h-14 flex items-center justify-between px-5"
         style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
       >
-        {/* Logo */}
+        {/* Logo + hamburger */}
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg shrink-0"
+            style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe' }}
+          >
+            <Menu className="w-4 h-4" style={{ color: '#1e3a8a' }} />
+          </button>
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', boxShadow: '0 2px 6px rgba(30,58,138,0.30)' }}
@@ -157,7 +164,7 @@ export default function Sidebar() {
 
           {bellOpen && (
             <div
-              className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden"
+              className="absolute right-0 mt-2 w-72 sm:w-80 rounded-xl overflow-hidden"
               style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.10)', zIndex: 60 }}
             >
               <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -448,7 +455,9 @@ export default function Sidebar() {
 
       {/* ── Left sidebar ── */}
       <aside
-        className="fixed top-14 left-0 z-40 w-52 h-[calc(100vh-3.5rem)] flex flex-col"
+        className={`fixed top-14 left-0 z-40 w-52 h-[calc(100vh-3.5rem)] flex flex-col transition-transform duration-300 ease-in-out ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
         style={{ backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0' }}
       >
         <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
@@ -457,6 +466,7 @@ export default function Sidebar() {
               key={to}
               to={to}
               end={end}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',

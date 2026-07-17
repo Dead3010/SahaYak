@@ -57,7 +57,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: '#94a3b8' }}>AI Performance</h2>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#059669' }} />
