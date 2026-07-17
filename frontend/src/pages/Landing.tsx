@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Headphones, Inbox, Users, Zap, BarChart2, ArrowRight, CheckCircle,
-  Clock, MessageSquare, ShieldCheck, Sparkles, Globe, Layers,
+  Clock, ShieldCheck, Globe, Layers,
   MessageCircle, ImageIcon, Mic, Languages, Bot, Filter,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
