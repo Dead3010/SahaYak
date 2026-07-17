@@ -187,14 +187,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
       const replyTarget = chatId.replace('@g.us', '').replace('@c.us', '');
       const displayName = isGroup ? `${senderName} (Group)` : senderName;
 
-      // Deduplication — don't create if active ticket exists
-      const activeTicket = await prisma.ticket.findFirst({
-        where: { fromPhone: replyTarget, source: 'WHATSAPP', status: { not: 'CLOSED' } },
-      });
-      if (activeTicket) {
-        console.log(`[WhatsApp] Active ticket ${activeTicket.id} exists for ${senderName}, skipping image ticket`);
-        return;
-      }
+      // Images always create a new ticket — user is explicitly showing their problem
 
       try {
         const analysis = await analyzeWhatsAppImage(downloadUrl, senderName, mimeType);
