@@ -35,8 +35,16 @@ router.post('/report-issue', async (req: Request, res: Response) => {
   }
 });
 
+const PRODUCT_LABELS: Record<string, string> = {
+  SAHAYAK: 'SahaYak AI',
+  SANGAM: 'Sangam',
+  SANCHAY: 'Sanchay',
+  SUGAM: 'Sugam',
+  SYNAPSE: 'Synapse',
+};
+
 router.post('/report-bug', async (req: Request, res: Response) => {
-  const { name, email, description, area } = req.body;
+  const { name, email, description, area, product } = req.body;
   if (!name || !email || !description) {
     res.status(400).json({ error: 'name, email and description are required' });
     return;
@@ -44,12 +52,14 @@ router.post('/report-bug', async (req: Request, res: Response) => {
 
   try {
     const notifyEmail = (process.env.NOTIFICATION_EMAIL || process.env.GMAIL_USER || '').trim();
-    const appTag = process.env.APP_NAME ? `\n\n— Sent from: ${process.env.APP_NAME}` : '';
+    const productLabel = product ? (PRODUCT_LABELS[product as string] ?? product) : (process.env.APP_NAME ?? null);
+    const tagline = productLabel ? `\n\n— Sent from: ${productLabel}` : '';
+    const subjectTag = productLabel ? ` [${productLabel}]` : '';
     await sendEmail({
       to: notifyEmail,
       toName: 'SahaYak AI',
-      subject: `Bug Report from ${name}${process.env.APP_NAME ? ` [${process.env.APP_NAME}]` : ''}`,
-      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}${area ? `\nAffected Area: ${area}` : ''}\n\nBug Description:\n${description}${appTag}`,
+      subject: `Bug Report from ${name}${subjectTag}`,
+      body: `You have a new bug report:\n\nName: ${name}\nEmail: ${email}${product ? `\nProduct: ${productLabel}` : ''}${area ? `\nAffected Area: ${area}` : ''}\n\nBug Description:\n${description}${tagline}`,
     });
     res.json({ ok: true });
   } catch (err) {

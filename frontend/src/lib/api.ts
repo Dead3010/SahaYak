@@ -64,7 +64,7 @@ export const api = {
       request<{ ok: boolean }>('POST', '/settings/demo-inquiry', data),
     reportIssue: (data: { name: string; email: string; message: string }) =>
       request<{ ok: boolean }>('POST', '/settings/report-issue', data),
-    reportBug: (data: { name: string; email: string; description: string; area?: string }) =>
+    reportBug: (data: { name: string; email: string; description: string; area?: string; product?: string }) =>
       request<{ ok: boolean }>('POST', '/settings/report-bug', data),
   },
 

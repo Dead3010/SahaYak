@@ -73,7 +73,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boo
   }, [newTickets]);
   const [contactOpen, setContactOpen] = useState(false);
   const [bugOpen, setBugOpen] = useState(false);
-  const [bugForm, setBugForm] = useState({ name: '', email: '', area: '', description: '' });
+  const [bugForm, setBugForm] = useState({ name: '', email: '', area: '', description: '', product: '' });
   const [bugLoading, setBugLoading] = useState(false);
   const [bugSuccess, setBugSuccess] = useState(false);
   const [bugError, setBugError] = useState('');
@@ -97,7 +97,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boo
     setBugOpen(false);
     setBugSuccess(false);
     setBugError('');
-    setBugForm({ name: '', email: '', area: '', description: '' });
+    setBugForm({ name: '', email: '', area: '', description: '', product: '' });
   };
 
   const handleBugSubmit = async (e: React.FormEvent) => {
@@ -110,6 +110,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boo
         email: bugForm.email,
         description: bugForm.description,
         area: bugForm.area || undefined,
+        product: bugForm.product || undefined,
       });
       setBugSuccess(true);
     } catch {
@@ -394,6 +395,23 @@ export default function Sidebar({ mobileOpen, setMobileOpen }: { mobileOpen: boo
                   value={bugForm.description}
                   onChange={(e) => setBugForm((f) => ({ ...f, description: e.target.value }))}
                   className="resize-none text-sm rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-600">
+                  Product <span className="text-slate-400 font-normal">(optional)</span>
+                </Label>
+                <Select value={bugForm.product} onValueChange={(v) => setBugForm((f) => ({ ...f, product: v }))}>
+                  <SelectTrigger className="h-9 text-sm rounded-xl">
+                    <SelectValue placeholder="Which product is affected?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SAHAYAK">SahaYak AI</SelectItem>
+                    <SelectItem value="SANGAM">Sangam</SelectItem>
+                    <SelectItem value="SANCHAY">Sanchay</SelectItem>
+                    <SelectItem value="SUGAM">Sugam</SelectItem>
+                    <SelectItem value="SYNAPSE">Synapse</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-600">
