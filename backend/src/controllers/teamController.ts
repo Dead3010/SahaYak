@@ -24,7 +24,7 @@ export const createTeam = async (req: AuthRequest, res: Response) => {
   if (!VALID_CATEGORIES.includes(category)) { res.status(400).json({ error: 'Invalid category' }); return; }
   if (!VALID_PRODUCTS.includes(product)) { res.status(400).json({ error: 'Invalid product' }); return; }
 
-  const existing = await prisma.team.findUnique({ where: { category_product: { category, product } } });
+  const existing = await prisma.team.findFirst({ where: { category, product } });
   if (existing) { res.status(409).json({ error: `A ${category} team for ${product} already exists` }); return; }
 
   const team = await prisma.team.create({ data: { name, category, product }, include: TEAM_INCLUDE });
@@ -48,20 +48,26 @@ export const seedDefaultTeams = async (_req: AuthRequest, res: Response) => {
 
   let created = 0;
   let skipped = 0;
+  const errors: string[] = [];
 
   for (const p of PRODUCTS) {
     for (const cat of VALID_CATEGORIES) {
-      const existing = await prisma.team.findUnique({ where: { category_product: { category: cat, product: p.value } } });
-      if (existing) { skipped++; continue; }
-      await prisma.team.create({
-        data: { name: `${p.label} – ${CATEGORY_LABELS[cat]}`, category: cat, product: p.value },
-      });
-      created++;
+      try {
+        const existing = await prisma.team.findFirst({ where: { category: cat, product: p.value } });
+        if (existing) { skipped++; continue; }
+        await prisma.team.create({
+          data: { name: `${p.label} – ${CATEGORY_LABELS[cat]}`, category: cat, product: p.value },
+        });
+        created++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${p.value}/${cat}: ${msg}`);
+      }
     }
   }
 
   const teams = await prisma.team.findMany({ include: TEAM_INCLUDE, orderBy: [{ product: 'asc' }, { category: 'asc' }] });
-  res.json({ message: `Created ${created} teams, skipped ${skipped} existing.`, teams });
+  res.json({ message: `Created ${created} teams, skipped ${skipped} existing.${errors.length ? ` Errors: ${errors.join('; ')}` : ''}`, teams });
 };
 
 export const updateTeam = async (req: AuthRequest, res: Response) => {
