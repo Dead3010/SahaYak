@@ -46,8 +46,25 @@ export const seedDefaultTeams = async (_req: AuthRequest, res: Response) => {
     REFUND_REQUEST:     'Refund',
   };
 
-  // Drop old single-category unique constraint if it still exists (idempotent)
-  await prisma.$executeRawUnsafe(`ALTER TABLE "Team" DROP CONSTRAINT IF EXISTS "Team_category_key"`).catch(() => {});
+  // Drop any single-column unique constraint on Team.category (whatever it's named on this DB)
+  try {
+    const rows = await prisma.$queryRaw<{ conname: string }[]>`
+      SELECT conname FROM pg_constraint
+      WHERE conrelid = 'Team'::regclass
+        AND contype = 'u'
+        AND array_length(conkey, 1) = 1
+        AND conkey[1] = (
+          SELECT attnum FROM pg_attribute
+          WHERE attrelid = 'Team'::regclass AND attname = 'category'
+        )
+    `;
+    for (const row of rows) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Team" DROP CONSTRAINT "${row.conname}"`);
+      console.log(`[SeedTeams] Dropped old constraint: ${row.conname}`);
+    }
+  } catch (e) {
+    console.error('[SeedTeams] Could not drop old category constraint:', e);
+  }
 
   let created = 0;
   let skipped = 0;
