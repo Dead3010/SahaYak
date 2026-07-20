@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Sparkles, FileText, MessageSquarePlus, Bot, Mail, Trash2, Pencil, SlidersHorizontal, X, Lock, Mic, MicOff, MessageCircle, RefreshCw, Send, Paperclip } from 'lucide-react';
 import { api } from '../lib/api';
-import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
+import { StatusBadge, CategoryBadge, PriorityBadge, ProductBadge } from '../components/StatusBadge';
 import { TICKET_STATUSES, TICKET_CATEGORIES, formatStatus, formatCategory } from '../lib/constants';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,7 +21,7 @@ export default function TicketDetail() {
   const [commentBody, setCommentBody] = useState('');
   const [commentError, setCommentError] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '', priority: '' });
+  const [updateForm, setUpdateForm] = useState({ status: '', category: '', assignedToId: '', priority: '', product: '' });
   const [showUpdate, setShowUpdate] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
 
@@ -58,7 +58,7 @@ export default function TicketDetail() {
 
   useEffect(() => {
     if (ticket) {
-      setUpdateForm({ status: ticket.status, category: ticket.category, assignedToId: ticket.assignedTo?.id ?? '', priority: ticket.priority });
+      setUpdateForm({ status: ticket.status, category: ticket.category, assignedToId: ticket.assignedTo?.id ?? '', priority: ticket.priority, product: ticket.product ?? '' });
     }
   }, [ticket]);
 
@@ -138,7 +138,7 @@ export default function TicketDetail() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['ticket', id] });
 
   const updateMutation = useMutation({
-    mutationFn: (patch: Partial<{ status: string; category: string; assignedToId: string | null; priority: string }>) =>
+    mutationFn: (patch: Partial<{ status: string; category: string; assignedToId: string | null; priority: string; product: string | null }>) =>
       api.tickets.update(id!, patch),
     onSuccess: () => { invalidate(); setShowUpdate(false); },
   });
@@ -301,6 +301,7 @@ export default function TicketDetail() {
                     🌐 {ticket.detectedLanguageName}
                   </Badge>
                 )}
+                {ticket.product && <ProductBadge product={ticket.product} />}
                 <PriorityBadge priority={ticket.priority} />
                 <CategoryBadge category={ticket.category} />
                 <StatusBadge status={ticket.status} />
@@ -707,6 +708,20 @@ export default function TicketDetail() {
                   </Select>
                 </div>
                 <div>
+                  <p className="text-xs font-semibold text-slate-500 mb-1">Product</p>
+                  <Select value={updateForm.product || 'none'} onValueChange={(v) => setUpdateForm((f) => ({ ...f, product: v === 'none' ? '' : v }))}>
+                    <SelectTrigger className="h-9 text-sm w-full bg-white rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="none">No product</SelectItem>
+                      <SelectItem value="SAHAYAK">SahaYak</SelectItem>
+                      <SelectItem value="SANGAM">Sangam</SelectItem>
+                      <SelectItem value="SANCHAY">Sanchay</SelectItem>
+                      <SelectItem value="SUGAM">Sugam</SelectItem>
+                      <SelectItem value="SYNAPSE">Synapse</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <p className="text-xs font-semibold text-slate-500 mb-1">Assigned to</p>
                   <Select
                     value={updateForm.assignedToId || 'unassigned'}
@@ -727,6 +742,7 @@ export default function TicketDetail() {
                     category: updateForm.category,
                     priority: updateForm.priority,
                     assignedToId: updateForm.assignedToId || null,
+                    product: updateForm.product || null,
                   })}
                   disabled={updateMutation.isPending}
                 >

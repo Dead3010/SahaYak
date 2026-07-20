@@ -3,11 +3,13 @@ export type TicketStatus = 'NEW' | 'PROCESSING' | 'OPEN' | 'RESOLVED' | 'CLOSED'
 export type TicketCategory = 'GENERAL_QUESTION' | 'TECHNICAL_QUESTION' | 'REFUND_REQUEST';
 export type TicketSource = 'EMAIL' | 'MANUAL' | 'WHATSAPP';
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type Product = 'SAHAYAK' | 'SANGAM' | 'SANCHAY' | 'SUGAM' | 'SYNAPSE';
 
 export interface Team {
   id: string;
   name: string;
   category: TicketCategory;
+  product: Product;
   members: { id: string; name: string; email: string; role: Role }[];
   createdAt: string;
 }
@@ -48,6 +50,7 @@ export interface Ticket {
   source: TicketSource;
   priority: TicketPriority;
   fromPhone: string | null;
+  product: Product | null;
   detectedLanguage: string | null;
   detectedLanguageName: string | null;
   translatedSubject: string | null;

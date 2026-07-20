@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UsersRound, UserPlus, UserMinus, Pencil, Plus, X } from 'lucide-react';
+import { UsersRound, UserPlus, UserMinus, Pencil, Plus, X, Layers } from 'lucide-react';
 import { api } from '../lib/api';
-import { Team, User } from '../types';
+import { Team, User, Product } from '../types';
 import { formatCategory } from '../lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,10 +13,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 
 const CATEGORIES = ['GENERAL_QUESTION', 'TECHNICAL_QUESTION', 'REFUND_REQUEST'] as const;
 
+const PRODUCTS: { value: Product; label: string; bg: string; text: string; border: string }[] = [
+  { value: 'SAHAYAK', label: 'SahaYak',  bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+  { value: 'SANGAM',  label: 'Sangam',   bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
+  { value: 'SANCHAY', label: 'Sanchay',  bg: '#faf5ff', text: '#6b21a8', border: '#e9d5ff' },
+  { value: 'SUGAM',   label: 'Sugam',    bg: '#fff7ed', text: '#9a3412', border: '#fed7aa' },
+  { value: 'SYNAPSE', label: 'Synapse',  bg: '#fff1f2', text: '#9f1239', border: '#fecdd3' },
+];
+
 const categoryMeta: Record<string, { label: string; color: string }> = {
   GENERAL_QUESTION:   { label: 'General',   color: 'bg-sky-50 text-sky-700 border-sky-200' },
   TECHNICAL_QUESTION: { label: 'Technical', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  REFUND_REQUEST:     { label: 'Sales',     color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  REFUND_REQUEST:     { label: 'Refund',    color: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 export default function Teams() {
@@ -24,7 +32,7 @@ export default function Teams() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTeam, setEditTeam] = useState<Team | null>(null);
   const [addMemberTeam, setAddMemberTeam] = useState<Team | null>(null);
-  const [createForm, setCreateForm] = useState({ name: '', category: '' });
+  const [createForm, setCreateForm] = useState({ name: '', category: '', product: '' });
   const [editName, setEditName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [error, setError] = useState('');
@@ -44,9 +52,15 @@ export default function Teams() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['teams'] });
 
+  const seedMutation = useMutation({
+    mutationFn: () => api.teams.seedDefaults(),
+    onSuccess: () => invalidate(),
+    onError: (e) => alert(e instanceof Error ? e.message : 'Failed to setup teams'),
+  });
+
   const createMutation = useMutation({
-    mutationFn: () => api.teams.create(createForm),
-    onSuccess: () => { invalidate(); setCreateOpen(false); setCreateForm({ name: '', category: '' }); setError(''); },
+    mutationFn: () => api.teams.create({ name: createForm.name, category: createForm.category, product: createForm.product }),
+    onSuccess: () => { invalidate(); setCreateOpen(false); setCreateForm({ name: '', category: '', product: '' }); setError(''); },
     onError: (e) => setError(e instanceof Error ? e.message : 'Failed to create team'),
   });
 
@@ -74,6 +88,12 @@ export default function Teams() {
     onError: (e) => alert(e instanceof Error ? e.message : 'Failed to remove member'),
   });
 
+  // Filter categories not yet taken for the selected product in the create form
+  const takenCategories = teams
+    .filter((t) => t.product === createForm.product)
+    .map((t) => t.category);
+  const availableCategories = CATEGORIES.filter((c) => !takenCategories.includes(c));
+
   const unassignedAgents = allAgents.filter((u) => !u.teamId);
   const teamMemberIds = (addMemberTeam?.members ?? []).map((m) => m.id);
   const availableAgents = unassignedAgents.filter((u) => !teamMemberIds.includes(u.id));
@@ -82,8 +102,8 @@ export default function Teams() {
     return (
       <div className="space-y-4 animate-fade-in">
         <div className="h-8 w-32 bg-slate-100 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-48 bg-white rounded-2xl border border-slate-100 animate-pulse" />)}
+        <div className="space-y-6">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-white rounded-2xl border border-slate-100 animate-pulse" />)}
         </div>
       </div>
     );
@@ -92,89 +112,136 @@ export default function Teams() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Teams</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage teams and assign agents to handle ticket categories</p>
+          <p className="text-sm text-slate-500 mt-1">Manage product teams and assign agents to handle ticket categories</p>
         </div>
-        {teams.length < 3 && (
-          <Button onClick={() => { setCreateForm({ name: '', category: '' }); setError(''); setCreateOpen(true); }}
-            className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => { if (confirm('This will create all 15 default teams (5 products × 3 categories). Existing teams will be skipped. Continue?')) seedMutation.mutate(); }}
+            disabled={seedMutation.isPending}
+            className="rounded-full font-semibold px-4 border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600"
+          >
+            <Layers className="w-4 h-4 mr-1.5" />
+            {seedMutation.isPending ? 'Setting up…' : 'Setup All Teams'}
+          </Button>
+          <Button
+            onClick={() => { setCreateForm({ name: '', category: '', product: '' }); setError(''); setCreateOpen(true); }}
+            className="rounded-full font-semibold px-5 shadow-sm shadow-blue-200"
+          >
             <Plus className="w-4 h-4 mr-1.5" /> New Team
           </Button>
-        )}
+        </div>
       </div>
 
-      {/* Team cards */}
+      {/* Teams grouped by product */}
       {teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-slate-100 shadow-sm text-center">
           <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
             <UsersRound className="w-7 h-7 text-blue-400" />
           </div>
           <p className="text-base font-bold text-slate-700">No teams yet</p>
-          <p className="text-sm text-slate-400 mt-1">Create up to 3 teams — one per ticket category</p>
+          <p className="text-sm text-slate-400 mt-1 mb-4">Click "Setup All Teams" to create all 15 default teams automatically</p>
+          <Button
+            onClick={() => seedMutation.mutate()}
+            disabled={seedMutation.isPending}
+            className="rounded-full font-semibold px-5"
+          >
+            <Layers className="w-4 h-4 mr-1.5" />
+            {seedMutation.isPending ? 'Setting up…' : 'Setup All Teams'}
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {teams.map((team) => {
-            const meta = categoryMeta[team.category] ?? categoryMeta.GENERAL_QUESTION;
+        <div className="space-y-8">
+          {PRODUCTS.map((product) => {
+            const productTeams = teams.filter((t) => t.product === product.value);
+            if (productTeams.length === 0) return null;
             return (
-              <div key={team.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4">
-                {/* Team header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h2 className="text-base font-bold text-slate-900">{team.name}</h2>
-                    <Badge className={`mt-1 text-[10px] px-2 py-0.5 rounded-full border font-semibold ${meta.color}`}>
-                      {meta.label}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => { setEditName(team.name); setError(''); setEditTeam(team); }}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => { if (confirm(`Delete team "${team.name}"?`)) deleteMutation.mutate(team.id); }}
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              <div key={product.value}>
+                {/* Product section header */}
+                <div className="flex items-center gap-2.5 mb-3">
+                  <span
+                    className="text-xs font-bold px-3 py-1 rounded-full border"
+                    style={{ backgroundColor: product.bg, color: product.text, borderColor: product.border }}
+                  >
+                    {product.label}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">{productTeams.length} / 3 teams</span>
                 </div>
 
-                {/* Members */}
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                    Agents ({team.members.length})
-                  </p>
-                  {team.members.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">No agents assigned</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {team.members.map((member) => (
-                        <div key={member.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
-                              <span className="text-[9px] font-bold text-white">{member.name.charAt(0).toUpperCase()}</span>
-                            </div>
-                            <span className="text-xs font-semibold text-slate-700 truncate">{member.name}</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {productTeams.map((team) => {
+                    const meta = categoryMeta[team.category] ?? categoryMeta.GENERAL_QUESTION;
+                    return (
+                      <div key={team.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-4">
+                        {/* Team header */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h2 className="text-base font-bold text-slate-900">{team.name}</h2>
+                            <Badge className={`mt-1 text-[10px] px-2 py-0.5 rounded-full border font-semibold ${meta.color}`}>
+                              {meta.label}
+                            </Badge>
                           </div>
-                          <button
-                            onClick={() => removeMemberMutation.mutate({ teamId: team.id, userId: member.id })}
-                            className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
-                          >
-                            <UserMinus className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => { setEditName(team.name); setError(''); setEditTeam(team); }}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm(`Delete team "${team.name}"?`)) deleteMutation.mutate(team.id); }}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* Add member button */}
-                <Button variant="outline" size="sm"
-                  onClick={() => { setSelectedUserId(''); setAddMemberTeam(team); }}
-                  className="rounded-full text-xs font-semibold w-full border-dashed">
-                  <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add Agent
-                </Button>
+                        {/* Members */}
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            Agents ({team.members.length})
+                          </p>
+                          {team.members.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic">No agents assigned</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {team.members.map((member) => (
+                                <div key={member.id} className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shrink-0">
+                                      <span className="text-[9px] font-bold text-white">{member.name.charAt(0).toUpperCase()}</span>
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-700 truncate">{member.name}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => removeMemberMutation.mutate({ teamId: team.id, userId: member.id })}
+                                    className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
+                                  >
+                                    <UserMinus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Add member button */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setSelectedUserId(''); setAddMemberTeam(team); }}
+                          className="rounded-full text-xs font-semibold w-full border-dashed"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Add Agent
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
@@ -190,26 +257,48 @@ export default function Teams() {
           <div className="space-y-4 py-2">
             {error && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</p>}
             <div className="space-y-1.5">
-              <Label>Team Name</Label>
-              <Input placeholder="e.g. Tech Support" value={createForm.name}
-                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} />
+              <Label>Product</Label>
+              <Select value={createForm.product} onValueChange={(v) => setCreateForm((f) => ({ ...f, product: v, category: '' }))}>
+                <SelectTrigger><SelectValue placeholder="Select a product" /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {PRODUCTS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Handles Category</Label>
-              <Select value={createForm.category} onValueChange={(v) => setCreateForm((f) => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+              <Select
+                value={createForm.category}
+                onValueChange={(v) => setCreateForm((f) => ({ ...f, category: v }))}
+                disabled={!createForm.product}
+              >
+                <SelectTrigger><SelectValue placeholder={createForm.product ? 'Select a category' : 'Select product first'} /></SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {CATEGORIES.filter((c) => !teams.find((t) => t.category === c)).map((c) => (
+                  {availableCategories.map((c) => (
                     <SelectItem key={c} value={c}>{formatCategory(c)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>Team Name</Label>
+              <Input
+                placeholder="e.g. Sangam Technical Support"
+                value={createForm.name}
+                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-full">Cancel</Button>
-            <Button onClick={() => { if (!createForm.name || !createForm.category) { setError('All fields required'); return; } createMutation.mutate(); }}
-              disabled={createMutation.isPending} className="rounded-full font-semibold">
+            <Button
+              onClick={() => {
+                if (!createForm.name || !createForm.category || !createForm.product) { setError('All fields required'); return; }
+                createMutation.mutate();
+              }}
+              disabled={createMutation.isPending}
+              className="rounded-full font-semibold"
+            >
               {createMutation.isPending ? 'Creating…' : 'Create Team'}
             </Button>
           </DialogFooter>
@@ -231,8 +320,11 @@ export default function Teams() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTeam(null)} className="rounded-full">Cancel</Button>
-            <Button onClick={() => { if (editTeam) updateMutation.mutate({ id: editTeam.id, name: editName }); }}
-              disabled={updateMutation.isPending} className="rounded-full font-semibold">
+            <Button
+              onClick={() => { if (editTeam) updateMutation.mutate({ id: editTeam.id, name: editName }); }}
+              disabled={updateMutation.isPending}
+              className="rounded-full font-semibold"
+            >
               {updateMutation.isPending ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>
@@ -270,7 +362,8 @@ export default function Teams() {
               <Button
                 onClick={() => { if (addMemberTeam && selectedUserId) addMemberMutation.mutate({ teamId: addMemberTeam.id, userId: selectedUserId }); }}
                 disabled={!selectedUserId || addMemberMutation.isPending}
-                className="rounded-full font-semibold">
+                className="rounded-full font-semibold"
+              >
                 {addMemberMutation.isPending ? 'Adding…' : 'Add Agent'}
               </Button>
             )}

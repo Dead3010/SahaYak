@@ -34,9 +34,9 @@ export const api = {
       }>('GET', `/tickets${qs ? `?${qs}` : ''}`);
     },
     get: (id: string) => request<{ ticket: import('../types').Ticket }>('GET', `/tickets/${id}`),
-    create: (data: { subject: string; body: string; fromEmail: string; fromName: string }) =>
+    create: (data: { subject: string; body: string; fromEmail: string; fromName: string; product?: string }) =>
       request<{ ticket: import('../types').Ticket }>('POST', '/tickets', data),
-    update: (id: string, data: Partial<{ status: string; category: string; assignedToId: string | null; priority: string }>) =>
+    update: (id: string, data: Partial<{ status: string; category: string; assignedToId: string | null; priority: string; product: string | null }>) =>
       request<{ ticket: import('../types').Ticket }>('PATCH', `/tickets/${id}`, data),
     classify: (id: string) =>
       request<{ ticket: import('../types').Ticket; category: string }>('POST', `/tickets/${id}/classify`),
@@ -70,11 +70,12 @@ export const api = {
 
   teams: {
     list: () => request<{ teams: import('../types').Team[] }>('GET', '/teams'),
-    create: (data: { name: string; category: string }) => request<{ team: import('../types').Team }>('POST', '/teams', data),
+    create: (data: { name: string; category: string; product: string }) => request<{ team: import('../types').Team }>('POST', '/teams', data),
     update: (id: string, data: { name: string }) => request<{ team: import('../types').Team }>('PATCH', `/teams/${id}`, data),
     delete: (id: string) => request<{ message: string }>('DELETE', `/teams/${id}`),
     addMember: (teamId: string, userId: string) => request<{ team: import('../types').Team }>('POST', `/teams/${teamId}/members`, { userId }),
     removeMember: (teamId: string, userId: string) => request<{ team: import('../types').Team }>('DELETE', `/teams/${teamId}/members/${userId}`),
+    seedDefaults: () => request<{ message: string; teams: import('../types').Team[] }>('POST', '/teams/seed-defaults'),
   },
 
   users: {

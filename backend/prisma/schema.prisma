@@ -32,6 +32,14 @@ enum TicketSource {
   WHATSAPP
 }
 
+enum Product {
+  SAHAYAK
+  SANGAM
+  SANCHAY
+  SUGAM
+  SYNAPSE
+}
+
 enum TicketPriority {
   LOW
   MEDIUM
@@ -42,12 +50,15 @@ enum TicketPriority {
 model Team {
   id        String         @id @default(cuid())
   name      String
-  category  TicketCategory @unique
+  category  TicketCategory
+  product   Product
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
   members User[]
   tickets Ticket[]
+
+  @@unique([category, product])
 }
 
 model User {
@@ -84,6 +95,7 @@ model Ticket {
   priority       TicketPriority @default(MEDIUM)
 
   fromPhone            String?
+  product              Product?
 
   detectedLanguage     String?
   detectedLanguageName String?

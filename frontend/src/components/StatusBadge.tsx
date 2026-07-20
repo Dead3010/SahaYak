@@ -1,4 +1,4 @@
-import { TicketStatus, TicketCategory, TicketPriority } from '../types';
+import { TicketStatus, TicketCategory, TicketPriority, Product } from '../types';
 import { formatStatus } from '@/lib/constants';
 
 export function StatusBadge({ status }: { status: TicketStatus }) {
@@ -65,6 +65,25 @@ export function CategoryBadge({ category }: { category: TicketCategory }) {
   return (
     <span className="text-sm font-semibold" style={{ color: colors[category] }}>
       {labels[category]}
+    </span>
+  );
+}
+
+export function ProductBadge({ product }: { product: Product }) {
+  const meta: Record<Product, { label: string; bg: string; text: string; border: string }> = {
+    SAHAYAK: { label: 'SahaYak',  bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+    SANGAM:  { label: 'Sangam',   bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
+    SANCHAY: { label: 'Sanchay',  bg: '#faf5ff', text: '#6b21a8', border: '#e9d5ff' },
+    SUGAM:   { label: 'Sugam',    bg: '#fff7ed', text: '#9a3412', border: '#fed7aa' },
+    SYNAPSE: { label: 'Synapse',  bg: '#fff1f2', text: '#9f1239', border: '#fecdd3' },
+  };
+  const m = meta[product];
+  return (
+    <span
+      className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+      style={{ backgroundColor: m.bg, color: m.text, borderColor: m.border }}
+    >
+      {m.label}
     </span>
   );
 }

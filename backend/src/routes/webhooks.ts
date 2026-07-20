@@ -1,9 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { sendEmail } from '../services/emailService';
-import { sendWhatsAppMessage } from '../services/whatsappService';
+import { sendWhatsAppMessage, getContactName } from '../services/whatsappService';
 import { prisma } from '../lib/prisma';
 import { triggerAutoResolve } from '../controllers/ticketController';
 import { scorePriority, analyzeBug, classifyTicket, isSupportQuery, analyzeWhatsAppImage } from '../services/aiService';
+import { Product } from '@prisma/client';
+
+function detectProduct(name: string): Product | null {
+  const n = name.toLowerCase();
+  if (n.includes('sahayak')) return 'SAHAYAK';
+  if (n.includes('sangam'))  return 'SANGAM';
+  if (n.includes('sanchay')) return 'SANCHAY';
+  if (n.includes('sugam'))   return 'SUGAM';
+  if (n.includes('synapse')) return 'SYNAPSE';
+  return null;
+}
 
 const router = Router();
 
@@ -192,6 +203,12 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
       try {
         const analysis = await analyzeWhatsAppImage(downloadUrl, senderName, mimeType);
 
+        let groupProduct: Product | null = null;
+        if (isGroup) {
+          const groupName = await getContactName(replyTarget).catch(() => null);
+          if (groupName) groupProduct = detectProduct(groupName);
+        }
+
         const ticket = await prisma.ticket.create({
           data: {
             subject: analysis.subject,
@@ -200,6 +217,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
             fromName: displayName,
             fromPhone: replyTarget,
             source: 'WHATSAPP',
+            ...(groupProduct ? { product: groupProduct } : {}),
           },
         });
 
@@ -266,6 +284,13 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
       return;
     }
 
+    // Detect product from group name for group chats
+    let groupProduct: Product | null = null;
+    if (isGroup) {
+      const groupName = await getContactName(replyTarget).catch(() => null);
+      if (groupName) groupProduct = detectProduct(groupName);
+    }
+
     // Create ticket
     const ticket = await prisma.ticket.create({
       data: {
@@ -275,6 +300,7 @@ router.post('/whatsapp', async (req: Request, res: Response) => {
         fromName: displayName,
         fromPhone: replyTarget,
         source: 'WHATSAPP',
+        ...(groupProduct ? { product: groupProduct } : {}),
       },
     });
 

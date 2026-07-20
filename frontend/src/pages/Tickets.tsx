@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, Inbox, Plus, CalendarDays, Bot, UserCircle, BarChart3, Clock, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { Ticket } from '../types';
-import { StatusBadge, CategoryBadge, PriorityBadge } from '../components/StatusBadge';
+import { StatusBadge, CategoryBadge, PriorityBadge, ProductBadge } from '../components/StatusBadge';
 import { TICKET_CATEGORIES, formatCategory } from '../lib/constants';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,15 @@ const PRESETS = [
   { label: 'Last 30 Days', key: '30days' },
 ];
 
-const EMPTY_FORM = { subject: '', body: '', fromName: '', fromEmail: '' };
+const PRODUCTS = [
+  { value: 'SAHAYAK', label: 'SahaYak' },
+  { value: 'SANGAM',  label: 'Sangam' },
+  { value: 'SANCHAY', label: 'Sanchay' },
+  { value: 'SUGAM',   label: 'Sugam' },
+  { value: 'SYNAPSE', label: 'Synapse' },
+] as const;
+
+const EMPTY_FORM = { subject: '', body: '', fromName: '', fromEmail: '', product: '' };
 
 export default function Tickets() {
   const [searchParams] = useSearchParams();
@@ -69,7 +77,7 @@ export default function Tickets() {
   const clearDates = () => { setActivePreset(''); setDateFrom(''); setDateTo(''); resetPage(); };
 
   const createMutation = useMutation({
-    mutationFn: () => api.tickets.create(form),
+    mutationFn: () => api.tickets.create({ ...form, ...(form.product ? { product: form.product } : {}) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tickets'] }); setDialogOpen(false); setForm(EMPTY_FORM); setFormError(''); },
     onError: (err: Error) => setFormError(err.message),
   });
@@ -79,6 +87,10 @@ export default function Tickets() {
     setFormError('');
     if (!form.subject.trim() || !form.body.trim() || !form.fromName.trim() || !form.fromEmail.trim()) {
       setFormError('All fields are required.');
+      return;
+    }
+    if (!form.product) {
+      setFormError('Please select a product.');
       return;
     }
     createMutation.mutate();
@@ -180,6 +192,15 @@ export default function Tickets() {
             <DialogTitle className="text-slate-900 font-bold">Create New Ticket</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 font-medium">Product <span className="text-red-500">*</span></Label>
+              <Select value={form.product} onValueChange={(v) => setForm((f) => ({ ...f, product: v }))}>
+                <SelectTrigger className="rounded-lg border-slate-200"><SelectValue placeholder="Select a product" /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {PRODUCTS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="fromName" className="text-slate-700 font-medium">Customer Name</Label>
@@ -372,6 +393,7 @@ export default function Tickets() {
                       <span className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors duration-150">
                         {ticket.subject}
                       </span>
+                      {ticket.product && <ProductBadge product={ticket.product} />}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-slate-400 truncate max-w-xs">

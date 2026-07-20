@@ -35,10 +35,18 @@ export async function triggerAutoResolve(ticketId: string) {
       const fresh = await prisma.ticket.findUnique({ where: { id: ticketId } });
       const category = fresh?.category ?? 'GENERAL_QUESTION';
 
-      const team = await prisma.team.findFirst({
-        where: { category },
+      let team = await prisma.team.findFirst({
+        where: { category, ...(fresh?.product ? { product: fresh.product } : {}) },
         include: { members: { where: { role: 'AGENT' } } },
       });
+
+      // Fallback: any team for this category regardless of product
+      if (!team || team.members.length === 0) {
+        team = await prisma.team.findFirst({
+          where: { category },
+          include: { members: { where: { role: 'AGENT' } } },
+        });
+      }
 
       if (team && team.members.length > 0) {
         const agent = team.members[Math.floor(Math.random() * team.members.length)];
@@ -156,14 +164,14 @@ export const getTicket = async (req: AuthRequest, res: Response) => {
 };
 
 export const createTicket = async (req: AuthRequest, res: Response) => {
-  const { subject, body, fromEmail, fromName } = req.body;
+  const { subject, body, fromEmail, fromName, product } = req.body;
   if (!subject || !body || !fromEmail || !fromName) {
     res.status(400).json({ error: 'subject, body, fromEmail, and fromName are required' });
     return;
   }
 
   const ticket = await prisma.ticket.create({
-    data: { subject, body, fromEmail, fromName, source: 'MANUAL' },
+    data: { subject, body, fromEmail, fromName, source: 'MANUAL', ...(product ? { product } : {}) },
   });
 
   triggerAutoResolve(ticket.id).catch(() => {});
@@ -188,12 +196,13 @@ export const createTicket = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateTicket = async (req: AuthRequest, res: Response) => {
-  const { status, category, assignedToId, priority } = req.body;
+  const { status, category, assignedToId, priority, product } = req.body;
   const data: Record<string, unknown> = {};
   if (status) data.status = status;
   if (category) data.category = category;
   if (priority) data.priority = priority as TicketPriority;
   if (assignedToId !== undefined) data.assignedToId = assignedToId || null;
+  if (product !== undefined) data.product = product || null;
 
   const ticket = await prisma.ticket.update({
     where: { id: (req.params.id as string) },
