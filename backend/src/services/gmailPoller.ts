@@ -59,8 +59,19 @@ async function fetchUnreadEmails() {
 
             if (!fromEmail || !body) continue;
 
+            // Extract product from subject tag e.g. "[Sangam]"
+            const SUBJECT_PRODUCT_MAP: Record<string, string> = {
+              'sahayak ai': 'SAHAYAK', sahayak: 'SAHAYAK',
+              sangam: 'SANGAM', sanchay: 'SANCHAY',
+              sugam: 'SUGAM', synapse: 'SYNAPSE',
+            };
+            const tagMatch = subject.match(/\[([^\]]+)\]\s*$/i);
+            const detectedProduct = tagMatch
+              ? SUBJECT_PRODUCT_MAP[tagMatch[1].toLowerCase().trim()] ?? null
+              : null;
+
             const ticket = await prisma.ticket.create({
-              data: { subject, body, fromEmail, fromName, source: 'EMAIL' },
+              data: { subject, body, fromEmail, fromName, source: 'EMAIL', ...(detectedProduct ? { product: detectedProduct as import('@prisma/client').Product } : {}) },
             });
 
             // Mark as read best-effort — must not block auto-resolve
