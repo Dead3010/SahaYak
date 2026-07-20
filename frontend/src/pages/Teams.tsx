@@ -120,7 +120,7 @@ export default function Teams() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => { if (confirm('This will create all 15 default teams (5 products × 3 categories). Existing teams will be skipped. Continue?')) seedMutation.mutate(); }}
+            onClick={() => seedMutation.mutate()}
             disabled={seedMutation.isPending}
             className="rounded-full font-semibold px-4 border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600"
           >
@@ -152,6 +152,7 @@ export default function Teams() {
             <Layers className="w-4 h-4 mr-1.5" />
             {seedMutation.isPending ? 'Setting up…' : 'Setup All Teams'}
           </Button>
+
         </div>
       ) : (
         <div className="space-y-8">
@@ -192,7 +193,7 @@ export default function Teams() {
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => { if (confirm(`Delete team "${team.name}"?`)) deleteMutation.mutate(team.id); }}
+                              onClick={() => deleteMutation.mutate(team.id)}
                               className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
                             >
                               <X className="w-3.5 h-3.5" />
