@@ -46,6 +46,9 @@ export const seedDefaultTeams = async (_req: AuthRequest, res: Response) => {
     REFUND_REQUEST:     'Refund',
   };
 
+  // Drop old single-category unique constraint if it still exists (idempotent)
+  await prisma.$executeRawUnsafe(`ALTER TABLE "Team" DROP CONSTRAINT IF EXISTS "Team_category_key"`).catch(() => {});
+
   let created = 0;
   let skipped = 0;
   const errors: string[] = [];
@@ -62,12 +65,17 @@ export const seedDefaultTeams = async (_req: AuthRequest, res: Response) => {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         errors.push(`${p.value}/${cat}: ${msg}`);
+        console.error(`[SeedTeams] Failed ${p.value}/${cat}:`, msg);
       }
     }
   }
 
   const teams = await prisma.team.findMany({ include: TEAM_INCLUDE, orderBy: [{ product: 'asc' }, { category: 'asc' }] });
-  res.json({ message: `Created ${created} teams, skipped ${skipped} existing.${errors.length ? ` Errors: ${errors.join('; ')}` : ''}`, teams });
+  if (errors.length) {
+    res.status(207).json({ message: `Created ${created}, skipped ${skipped}. Errors: ${errors.join('; ')}`, teams });
+    return;
+  }
+  res.json({ message: `Created ${created} teams, skipped ${skipped} existing.`, teams });
 };
 
 export const updateTeam = async (req: AuthRequest, res: Response) => {

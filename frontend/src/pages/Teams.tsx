@@ -36,6 +36,7 @@ export default function Teams() {
   const [editName, setEditName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [error, setError] = useState('');
+  const [seedMessage, setSeedMessage] = useState('');
 
   const { data: teamsData, isLoading } = useQuery({
     queryKey: ['teams'],
@@ -54,8 +55,8 @@ export default function Teams() {
 
   const seedMutation = useMutation({
     mutationFn: () => api.teams.seedDefaults(),
-    onSuccess: () => invalidate(),
-    onError: (e) => alert(e instanceof Error ? e.message : 'Failed to setup teams'),
+    onSuccess: (data) => { invalidate(); setSeedMessage(data.message); setTimeout(() => setSeedMessage(''), 6000); },
+    onError: (e) => setSeedMessage(`Error: ${e instanceof Error ? e.message : 'Failed to setup teams'}`),
   });
 
   const createMutation = useMutation({
@@ -135,6 +136,12 @@ export default function Teams() {
           </Button>
         </div>
       </div>
+
+      {seedMessage && (
+        <div className={`text-sm px-4 py-3 rounded-xl border ${seedMessage.startsWith('Error') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+          {seedMessage}
+        </div>
+      )}
 
       {/* Teams grouped by product */}
       {teams.length === 0 ? (
