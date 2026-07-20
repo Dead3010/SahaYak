@@ -14,7 +14,8 @@
     "test:dev": "dotenv -e .env.test -- ts-node-dev --respawn --transpile-only src/index.ts",
     "test:db:migrate": "dotenv -e .env.test -- prisma migrate deploy",
     "test:db:reset": "dotenv -e .env.test -- prisma migrate reset --force",
-    "test:db:seed": "dotenv -e .env.test -- ts-node prisma/seed.ts"
+    "test:db:seed": "dotenv -e .env.test -- ts-node prisma/seed.ts",
+    "seed:agents": "ts-node prisma/seedAgents.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.55.0",
